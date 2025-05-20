@@ -1,22 +1,22 @@
 {
-    "ovalado": {
-      "peinados": ["capas largas", "corte bob", "flequillo lateral"],
-      "gafas": ["aviador", "rectangulares delgadas", "redondas pequeñas"],
-      "escotes": ["cuello redondo", "escote barco", "escote palabra de honor"]
-    },
-    "redondo": {
-      "peinados": ["largo con volumen arriba", "corte pixie", "flequillo recto"],
-      "gafas": ["rectangulares anchas", "mariposa", "hexagonales"],
-      "escotes": ["escote V", "cuello en pico", "escote cruzado"]
-    },
-    "cuadrado": {
-      "peinados": ["ondas sueltas", "corte en capas", "media melena"],
-      "gafas": ["redondas", "ovaladas", "cat-eye"],
-      "escotes": ["escote corazón", "cuello ancho", "escote off-shoulder"]
-    },
-    "corazón": {
-      "peinados": ["corte lob", "flequillo corto", "moño alto"],
-      "gafas": ["aviador", "rectangulares estrechas", "sin montura"],
-      "escotes": ["escote scoop", "cuello bote", "escote halter"]
-    }
+  "ovalado": {
+    "peinados": ["capas largas", "corte bob", "flequillo lateral"],
+    "gafas": ["aviador", "rectangulares delgadas", "redondas pequeñas"],
+    "escotes": ["cuello redondo", "escote barco", "escote palabra de honor"]
+  },
+  "redondo": {
+    "peinados": ["largo con volumen arriba", "corte pixie", "flequillo recto"],
+    "gafas": ["rectangulares anchas", "mariposa", "hexagonales"],
+    "escotes": ["escote V", "cuello en pico", "escote cruzado"]
+  },
+  "cuadrado": {
+    "peinados": ["ondas sueltas", "corte en capas", "media melena"],
+    "gafas": ["redondas", "ovaladas", "cat-eye"],
+    "escotes": ["escote corazón", "cuello ancho", "escote off-shoulder"]
+  },
+  "corazón": {
+    "peinados": ["corte lob", "flequillo corto", "moño alto"],
+    "gafas": ["aviador", "rectangulares estrechas", "sin montura"],
+    "escotes": ["escote scoop", "cuello bote", "escote halter"]
   }
+}
