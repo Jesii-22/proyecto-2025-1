@@ -1,32 +1,29 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>StyleMatch</title>
-  <link rel="stylesheet" href="styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StyleMatch Lite</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="container">
-    <h1>StyleMatch ✨</h1>
-    <p>¡Descubre qué estilos te favorecen!</p>
-    
-    <div class="wrapper">
-      <video id="video" width="400" height="300" autoplay muted></video>
-      <canvas id="canvas" width="400" height="300"></canvas>
+    <div class="container">
+        <h1>StyleMatch Lite</h1>
+        <p class="subtitle">Descubre qué estilos te favorecen</p>
+        
+        <div class="video-container">
+            <video id="video" width="400" height="300" autoplay muted></video>
+            <canvas id="canvas"></canvas>
+        </div>
+        
+        <button id="start-btn">Analizar mi rostro</button>
+        
+        <div id="results">
+            <p>Presiona el botón para comenzar el análisis</p>
+        </div>
     </div>
-    
-    <div class="results">
-      <h2>Tus resultados:</h2>
-      <div id="results-text">Presiona "Comenzar"</div>
-      <div id="recommendations"></div>
-    </div>
-    
-    <button id="start-btn">Comenzar</button>
-    <div id="status"></div>
-  </div>
 
-  <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
