@@ -3,32 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>StyleMatch - Asesor de Estilo Facial</title>
+  <title>StyleMatch</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 </head>
 <body>
   <div class="container">
     <h1>StyleMatch ✨</h1>
-    <p class="subtitle">¡Descubre qué peinados y accesorios te favorecen!</p>
+    <p>¡Descubre qué estilos te favorecen!</p>
     
     <div class="wrapper">
-      <div class="video-container">
-        <video id="video" width="400" height="300" autoplay muted></video>
-        <canvas id="canvas" width="400" height="300"></canvas>
-      </div>
-      
-      <div class="results">
-        <h2>Tus resultados:</h2>
-        <div id="results-text">
-          <p>Presiona "Comenzar" para iniciar el análisis facial.</p>
-        </div>
-        <div id="recommendations"></div>
-      </div>
+      <video id="video" width="400" height="300" autoplay muted></video>
+      <canvas id="canvas" width="400" height="300"></canvas>
+    </div>
+    
+    <div class="results">
+      <h2>Tus resultados:</h2>
+      <div id="results-text">Presiona "Comenzar"</div>
+      <div id="recommendations"></div>
     </div>
     
     <button id="start-btn">Comenzar</button>
-    <div id="status" class="status"></div>
+    <div id="status"></div>
   </div>
 
   <script src="script.js"></script>
