@@ -4,28 +4,22 @@ let videoStream = null;
 
 // Elementos del DOM
 const video = document.getElementById('video');
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d', { willReadFrequently: true });
-const resultsDiv = document.getElementById('results');
 const startBtn = document.getElementById('start-btn');
+const resultsDiv = document.getElementById('results');
 
-// 1. Cargar modelos
-async function loadModels() {
-    try {
-        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-        await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-        console.log("Modelos cargados");
-        return true;
-    } catch (error) {
-        console.error("Error cargando modelos:", error);
-        showError("Error técnico. Recarga la página.");
+// 1. Verificar compatibilidad con cámara
+function checkCameraSupport() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showError("Tu navegador no soporta acceso a cámara o estás en modo incógnito");
         return false;
     }
+    return true;
 }
 
-// 2. Configurar cámara
+// 2. Configurar cámara (versión mejorada)
 async function setupCamera() {
     try {
+        // Detener stream anterior si existe
         if (videoStream) {
             videoStream.getTracks().forEach(track => track.stop());
         }
@@ -42,122 +36,88 @@ async function setupCamera() {
         
         return new Promise((resolve) => {
             video.onloadedmetadata = () => {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
                 resolve(true);
+            };
+            video.onerror = () => {
+                showError("Error al iniciar el video");
+                resolve(false);
             };
         });
     } catch (error) {
         console.error("Error en cámara:", error);
-        showError("No se pudo acceder a la cámara.");
+        handleCameraError(error);
         return false;
     }
 }
 
-// 3. Detección facial
-async function detectFaceWithRetry(maxAttempts = 3) {
-    let attempts = 0;
+// 3. Manejo específico de errores de cámara
+function handleCameraError(error) {
+    let message = "Error desconocido";
     
-    while (attempts < maxAttempts) {
-        attempts++;
-        const detection = await tryFaceDetection();
-        if (detection) return detection;
-        await new Promise(resolve => setTimeout(resolve, 500));
+    if (error.name === 'NotAllowedError') {
+        message = "Permiso de cámara denegado. Actualiza los permisos en tu navegador.";
+    } else if (error.name === 'NotFoundError') {
+        message = "No se encontró cámara disponible";
+    } else if (error.name === 'NotReadableError') {
+        message = "La cámara está siendo usada por otra aplicación";
     }
     
-    return null;
+    showError(message);
 }
 
-async function tryFaceDetection() {
-    try {
-        const options = new faceapi.TinyFaceDetectorOptions({
-            inputSize: 384,
-            scoreThreshold: 0.5
-        });
+// 4. Función para mostrar errores
+function showError(message) {
+    resultsDiv.innerHTML = `
+        <div class="error-message">
+            <p>❌ ${message}</p>
+            <ul class="tips">
+                <li>▸ Asegúrate de dar permisos de cámara</li>
+                <li>▸ Prueba en otro navegador (Chrome/Firefox)</li>
+                <li>▸ Verifica que ninguna otra app use la cámara</li>
+            </ul>
+            <button onclick="window.location.reload()">Reintentar</button>
+        </div>
+    `;
+}
 
-        const detections = await faceapi.detectAllFaces(video, options)
-            .withFaceLandmarks();
-        
-        if (detections.length > 0) {
-            return analyzeFaceShape(detections[0].landmarks);
+// 5. Controlador principal
+async function initApp() {
+    if (!checkCameraSupport()) return;
+    
+    startBtn.disabled = true;
+    resultsDiv.innerHTML = "<p>Iniciando cámara...</p>";
+    
+    try {
+        const cameraReady = await setupCamera();
+        if (cameraReady) {
+            startBtn.disabled = false;
+            resultsDiv.innerHTML = `
+                <p>✅ Cámara lista</p>
+                <p>Presiona "Analizar mi rostro" para comenzar</p>
+            `;
         }
-        return null;
     } catch (error) {
-        console.error("Error en detección:", error);
-        return null;
+        console.error("Error crítico:", error);
+        showError("Error inicializando la aplicación");
     }
 }
 
-// 4. Análisis de forma de rostro (CORREGIDO)
-function analyzeFaceShape(landmarks) {
-    try {
-        // Obtener puntos clave con índices precisos
-        const jaw = landmarks.getJawOutline();
-        const forehead = jaw[0];     // Punto frontal (índice 0)
-        const chin = jaw[16];       // Mentón (índice 16 en 68-point model)
-        const leftCheek = jaw[4];   // Mejilla izquierda (índice 4)
-        const rightCheek = jaw[12]; // Mejilla derecha (índice 12)
-
-        // Dibujar los 4 puntos clave
-        drawLandmarkPoints([
-            forehead, 
-            chin, 
-            leftCheek, 
-            rightCheek
-        ]);
-
-        // Cálculos de proporción
-        const faceHeight = faceapi.euclideanDistance(forehead, chin);
-        const faceWidth = faceapi.euclideanDistance(leftCheek, rightCheek);
-        const ratio = faceHeight / faceWidth;
-
-        // Clasificación
-        if (ratio > 1.35) return "Alargado";
-        if (ratio < 0.9) return "Ancho/Redondo";
-        
-        const jawWidth = faceapi.euclideanDistance(jaw[3], jaw[13]);
-        const isSquare = Math.abs(jawWidth - faceWidth) < (faceWidth * 0.15);
-        
-        return isSquare ? "Cuadrado" : "Ovalado";
-    } catch (error) {
-        console.error("Error en análisis:", error);
-        return "Indeterminado";
-    }
-}
-
-// 5. Dibujar puntos clave (FUNCION CORREGIDA)
-function drawLandmarkPoints(points) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Dibujar cada punto con etiqueta
-    points.forEach((point, index) => {
-        if (!point) return; // Validar si el punto existe
-        
-        ctx.fillStyle = '#00FF00';
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI);
-        ctx.fill();
-        
-        // Etiquetas de debug
-        const labels = ["Frente", "Mentón", "Mejilla Izq", "Mejilla Der"];
-        ctx.fillStyle = 'white';
-        ctx.font = '12px Arial';
-        ctx.fillText(labels[index], point.x + 10, point.y);
-    });
-}
+// Iniciar al cargar la página
+window.addEventListener('DOMContentLoaded', initApp);
 
 // 6. Interfaz de usuario
 function updateStatus(message) {
-    resultsDiv.innerHTML = `<p class="status">${message}</p>`;
+    resultsDiv.innerHTML = `<div class="status-message">${message}</div>`;
 }
 
 function showError(message) {
     resultsDiv.innerHTML = `
-        <div class="error">
+        <div class="error-message">
             <p>${message}</p>
-            <ul>
+            <ul class="tips">
                 <li>▸ Acércate a la cámara</li>
                 <li>▸ Busca buena iluminación</li>
+                <li>▸ Mantén el rostro centrado</li>
             </ul>
         </div>
     `;
@@ -166,32 +126,35 @@ function showError(message) {
 function showResults(faceType) {
     const recommendations = {
         "Alargado": {
-            peinados: ["Corte bob", "Flequillo lateral"],
-            gafas: ["Aviador", "Rectangulares"]
+            peinados: ["Corte bob", "Flequillo lateral", "Ondas"],
+            gafas: ["Aviador", "Rectangulares altas"]
         },
         "Ancho/Redondo": {
-            peinados: ["Pixie", "Volumen arriba"],
-            gafas: ["Rectangulares anchas"]
+            peinados: ["Pixie", "Volumen arriba", "Flequillo recto"],
+            gafas: ["Rectangulares anchas", "Mariposa"]
         },
         "Ovalado": {
-            peinados: ["Lob", "Ondas sueltas"],
+            peinados: ["Lob", "Ondas sueltas", "Capas"],
             gafas: ["Cualquier estilo"]
         },
         "Cuadrado": {
-            peinados: ["Ondas", "Flequillo lateral"],
-            gafas: ["Redondas"]
+            peinados: ["Ondas", "Media melena", "Flequillo suave"],
+            gafas: ["Redondas", "Ovaladas"]
         }
     };
 
     const recs = recommendations[faceType] || recommendations.Ovalado;
     
     resultsDiv.innerHTML = `
-        <div class="result">
+        <div class="result-card">
             <h3>¡Análisis completado!</h3>
-            <p>Forma de rostro: <strong>${faceType}</strong></p>
-            <p><strong>Peinados:</strong> ${recs.peinados.join(', ')}</p>
-            <p><strong>Gafas:</strong> ${recs.gafas.join(', ')}</p>
-            <small>Los puntos verdes son puntos de referencia</small>
+            <p class="face-type">Forma de rostro: <strong>${faceType}</strong></p>
+            <div class="recommendations">
+                <h4>Recomendaciones:</h4>
+                <p><strong>Peinados:</strong> ${recs.peinados.join(', ')}</p>
+                <p><strong>Gafas:</strong> ${recs.gafas.join(', ')}</p>
+            </div>
+            <p class="hint">Los puntos verdes muestran los puntos de referencia usados</p>
         </div>
     `;
 }
@@ -199,14 +162,17 @@ function showResults(faceType) {
 // Controlador principal
 async function runAnalysis() {
     startBtn.disabled = true;
-    updateStatus("Analizando...");
+    updateStatus("Iniciando análisis...");
     
     try {
         if (!await loadModels()) return;
         if (!await setupCamera()) return;
         
         const faceType = await detectFaceWithRetry();
-        faceType ? showResults(faceType) : showError("No se detectó un rostro.");
+        faceType ? showResults(faceType) : showError("No se detectó un rostro válido.");
+    } catch (error) {
+        console.error("Error crítico:", error);
+        showError("Error inesperado. Recarga la página.");
     } finally {
         startBtn.disabled = false;
     }
@@ -216,4 +182,6 @@ async function runAnalysis() {
 startBtn.addEventListener('click', runAnalysis);
 
 // Precarga inicial
-window.addEventListener('DOMContentLoaded', loadModels);
+window.addEventListener('DOMContentLoaded', () => {
+    loadModels().catch(console.error);
+});

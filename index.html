@@ -3,47 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Analiza tu forma de rostro y descubre peinados y gafas ideales">
-    <title>StyleMatch Lite | Análisis Facial</title>
+    <title>StyleMatch Lite</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <header class="app-header">
-            <h1>StyleMatch Lite</h1>
-            <p class="subtitle">Descubre qué estilos te favorecen según tu rostro</p>
-        </header>
-
-        <main class="app-content">
-            <div class="camera-frame">
-                <div class="video-container">
-                    <video id="video" width="400" height="300" autoplay muted playsinline aria-label="Cámara en tiempo real"></video>
-                    <canvas id="canvas" aria-hidden="true"></canvas>
-                    <div class="camera-guide"></div> <!-- Marco guía para centrar el rostro -->
-                </div>
-            </div>
-
-            <div class="controls">
-                <button id="start-btn" class="primary-btn" aria-label="Analizar mi rostro">
-                    <span class="btn-icon">📷</span> Analizar mi rostro
-                </button>
-            </div>
-
-            <section id="results" class="results-container" aria-live="polite">
-                <div class="initial-message">
-                    <p>Presiona el botón para comenzar el análisis facial</p>
-                    <ul class="tips">
-                        <li>▸ Asegura buena iluminación</li>
-                        <li>▸ Mantén el rostro centrado</li>
-                        <li>▸ Quítate gafas oscuras</li>
-                    </ul>
-                </div>
-            </section>
-        </main>
+        <video id="video" autoplay muted playsinline></video>
+        <canvas id="canvas"></canvas>
+        <button id="start-btn">Analizar mi rostro</button>
+        <div id="results"></div>
     </div>
 
-    <!-- Scripts al final para mejor rendimiento -->
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-    <script src="script.js" defer></script>
+    <script src="script.js"></script>
 </body>
 </html>
