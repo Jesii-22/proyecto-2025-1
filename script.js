@@ -1,6 +1,7 @@
 // Configuración
 const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
 let videoStream = null;
+let isAnalyzing = false;
 
 // Elementos del DOM
 const video = document.getElementById('video');
@@ -12,8 +13,10 @@ const startBtn = document.getElementById('start-btn');
 // 1. Cargar modelos de face-api.js (FUNCIÓN AÑADIDA)
 async function loadModels() {
     try {
-        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-        await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+        await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+            faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)
+        ]);
         console.log("Modelos cargados correctamente");
         return true;
     } catch (error) {
@@ -26,10 +29,13 @@ async function loadModels() {
 // 2. Configurar cámara
 async function setupCamera() {
     try {
+        // Detener cualquier stream anterior
         if (videoStream) {
             videoStream.getTracks().forEach(track => track.stop());
+            videoStream = null;
         }
-
+        
+        // Obtener acceso a la cámara
         videoStream = await navigator.mediaDevices.getUserMedia({
             video: {
                 width: { ideal: 640 },
@@ -37,55 +43,149 @@ async function setupCamera() {
                 facingMode: "user"
             }
         });
-
-        video.srcObject = videoStream;
         
-        return new Promise((resolve) => {
-            video.onloadedmetadata = () => {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                resolve(true);
-            };
-        });
+        // Verificar que el stream está activo
+        if (videoStream) {
+            video.srcObject = videoStream;
+            
+            // Esperar a que el video esté cargado
+            return new Promise((resolve, reject) => {
+                video.onloadedmetadata = () => {
+                    console.log("Video metadata cargada:", video.videoWidth, video.videoHeight);
+                    if (video.videoWidth && video.videoHeight) {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        resolve(true);
+                    } else {
+                        reject(new Error("No se pudo obtener las dimensiones del video"));
+                    }
+                };
+                
+                // Timeout por si la cámara no se carga
+                setTimeout(() => {
+                    if (!video.videoWidth) {
+                        reject(new Error("No se pudo cargar el video correctamente. Verifica que tu dispositivo tiene una cámara y que has dado permisos."));
+                    }
+                }, 5000);
+            });
+        } else {
+            reject(new Error("No se pudo obtener el stream de la cámara"));
+        }
     } catch (error) {
         console.error("Error al acceder a la cámara:", error);
-        showError("No se pudo acceder a la cámara. Asegúrate de dar los permisos.");
+        showError(`No se pudo acceder a la cámara: ${error.message}. Asegúrate de dar los permisos y que tu dispositivo tiene una cámara.`);
         return false;
     }
 }
 
-// 3. Detección facial
-async function detectFaceWithRetry(maxAttempts = 3) {
-    let attempts = 0;
-    
-    while (attempts < maxAttempts) {
-        attempts++;
-        const detection = await tryFaceDetection();
-        if (detection) return detection;
-        await new Promise(resolve => setTimeout(resolve, 500));
-    }
-    
-    return null;
-}
-
-async function tryFaceDetection() {
+// 3. Detección facial con bucle continuo
+async function detectFaceContinuously() {
     try {
         const options = new faceapi.TinyFaceDetectorOptions({
             inputSize: 320,
             scoreThreshold: 0.5
         });
-
-        const detections = await faceapi.detectAllFaces(video, options)
-            .withFaceLandmarks();
         
-        if (detections.length > 0) {
-            return analyzeFaceShape(detections[0].landmarks);
-        }
-        return null;
+        // Detección continua
+        const detectFace = async () => {
+            if (!isAnalyzing) return;
+            
+            try {
+                // Verificar que el video está activo
+                if (!video.srcObject || video.srcObject.getTracks().length === 0) {
+                    console.error("Video no está activo");
+                    isAnalyzing = false;
+                    startBtn.disabled = false;
+                    showError("La conexión con la cámara se perdió. Intenta de nuevo.");
+                    return;
+                }
+                
+                // Verificar que el video tiene dimensiones
+                if (video.videoWidth === 0 || video.videoHeight === 0) {
+                    console.error("Video sin dimensiones", video.videoWidth, video.videoHeight);
+                    requestAnimationFrame(detectFace);
+                    return;
+                }
+                
+                console.log("Detección en progreso...");
+                
+                const detections = await faceapi.detectAllFaces(video, options)
+                    .withFaceLandmarks();
+                
+                // Limpiar canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                if (detections.length > 0) {
+                    console.log("Cara detectada:", detections[0]);
+                    
+                    // Dibujar landmarks manualmente
+                    detections.forEach(detection => {
+                        const landmarks = detection.landmarks;
+                        drawLandmarks(landmarks);
+                    });
+                    
+                    // Analizar forma del rostro
+                    const faceType = analyzeFaceShape(detections[0].landmarks);
+                    
+                    // Mostrar resultados
+                    showResults(faceType);
+                    
+                    // Detener detección después de encontrar un resultado
+                    isAnalyzing = false;
+                    startBtn.disabled = false;
+                } else {
+                    // Si no se detecta rostro, continuar intentando
+                    requestAnimationFrame(detectFace);
+                }
+            } catch (error) {
+                console.error("Error en detección:", error);
+                isAnalyzing = false;
+                startBtn.disabled = false;
+                showError("Hubo un problema con la detección facial: " + error.message);
+            }
+        };
+        
+        await detectFace();
     } catch (error) {
-        console.error("Error en detección:", error);
-        return null;
+        console.error("Error en detección continua:", error);
+        isAnalyzing = false;
+        startBtn.disabled = false;
+        showError("Hubo un problema con la detección facial: " + error.message);
     }
+}
+
+// Función para dibujar landmarks manualmente
+function drawLandmarks(landmarks) {
+    // Dibujar todos los puntos de referencia
+    landmarks.positions.forEach((point, index) => {
+        ctx.fillStyle = '#00FF00';
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 2, 0, 2 * Math.PI);
+        ctx.fill();
+    });
+    
+    // Dibujar puntos específicos con etiquetas
+    const specificPoints = [
+        { index: 10, label: "Frente" },
+        { index: 8, label: "Mentón" },
+        { index: 3, label: "Mejilla Izq" },
+        { index: 13, label: "Mejilla Der" }
+    ];
+    
+    specificPoints.forEach(({ index, label }) => {
+        const point = landmarks.positions[index];
+        
+        // Dibujar punto más grande
+        ctx.fillStyle = '#00FF00';
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Dibujar etiqueta
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 12px Arial';
+        ctx.fillText(label, point.x + 10, point.y - 10);
+    });
 }
 
 // 4. Análisis de forma de rostro
@@ -104,20 +204,12 @@ function analyzeFaceShape(landmarks) {
         const chin = positions[CHIN];
         const leftCheek = positions[LEFT_CHEEK];
         const rightCheek = positions[RIGHT_CHEEK];
-
-        // Dibujar puntos de referencia
-        drawLandmarkPoints([
-            { point: forehead, label: "Frente" },
-            { point: chin, label: "Mentón" },
-            { point: leftCheek, label: "Mejilla Izq" },
-            { point: rightCheek, label: "Mejilla Der" }
-        ]);
-
+        
         // Cálculos de proporción
         const faceHeight = faceapi.euclideanDistance(forehead, chin);
         const faceWidth = faceapi.euclideanDistance(leftCheek, rightCheek);
         const ratio = faceHeight / faceWidth;
-
+        
         // Clasificación
         if (ratio > 1.35) return "Alargado";
         if (ratio < 0.9) return "Ancho/Redondo";
@@ -133,27 +225,7 @@ function analyzeFaceShape(landmarks) {
     }
 }
 
-// 5. Dibujar puntos y etiquetas
-function drawLandmarkPoints(points) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    points.forEach(({ point, label }) => {
-        if (!point) return;
-        
-        // Dibujar punto
-        ctx.fillStyle = '#00FF00';
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI);
-        ctx.fill();
-        
-        // Dibujar etiqueta
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 12px Arial';
-        ctx.fillText(label, point.x + 10, point.y - 10);
-    });
-}
-
-// 6. Mostrar resultados
+// 5. Mostrar resultados
 function showResults(faceType) {
     const recommendations = {
         "Alargado": {
@@ -173,7 +245,7 @@ function showResults(faceType) {
             gafas: ["Redondas", "Ovaladas"]
         }
     };
-
+    
     const recs = recommendations[faceType] || recommendations.Ovalado;
     
     resultsDiv.innerHTML = `
@@ -198,6 +270,8 @@ function showError(message) {
                 <li>▸ Asegúrate de tener buena iluminación</li>
                 <li>▸ Mantén tu rostro centrado</li>
                 <li>▸ Acércate a la cámara</li>
+                <li>▸ Verifica que tu navegador tenga acceso a la cámara</li>
+                <li>▸ Prueba con otro navegador (Chrome funciona mejor con cámaras)</li>
             </ul>
         </div>
     `;
@@ -205,27 +279,40 @@ function showError(message) {
 
 // Controlador principal
 async function runAnalysis() {
+    if (isAnalyzing) return;
+    
+    isAnalyzing = true;
     startBtn.disabled = true;
     resultsDiv.innerHTML = "<p>Analizando tu rostro...</p>";
     
     try {
-        const modelsLoaded = await loadModels();
-        if (!modelsLoaded) return;
+        // Verificar si los modelos están cargados
+        if (!faceapi.nets.tinyFaceDetector.isLoaded || !faceapi.nets.faceLandmark68Net.isLoaded) {
+            const modelsLoaded = await loadModels();
+            if (!modelsLoaded) return;
+        }
         
+        // Configurar la cámara
+        console.log("Configurando cámara...");
         const cameraReady = await setupCamera();
         if (!cameraReady) return;
         
-        const faceType = await detectFaceWithRetry();
-        
-        if (faceType) {
-            showResults(faceType);
-        } else {
-            showError("No se detectó un rostro claro. Intenta:");
+        // Verificar que el video está activo
+        if (!video.srcObject || video.srcObject.getTracks().length === 0) {
+            console.error("Video no está activo después de setupCamera");
+            isAnalyzing = false;
+            startBtn.disabled = false;
+            return;
         }
+        
+        // Iniciar detección continua
+        console.log("Iniciando detección...");
+        await detectFaceContinuously();
+        
     } catch (error) {
         console.error("Error inesperado:", error);
-        showError("Ocurrió un error inesperado");
-    } finally {
+        showError("Ocurrió un error inesperado: " + error.message);
+        isAnalyzing = false;
         startBtn.disabled = false;
     }
 }
