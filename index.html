@@ -1,108 +1,29 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análisis Facial Personalizado</title>
-    <link rel="stylesheet" href="styles.css">
-    <!-- Incluir face-api.js -->
-    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Análisis Facial Personalizado</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.0/dist/face-api.min.js"></script>
 </head>
 <body>
-    <header>
-        <h1>Análisis Facial Personalizado</h1>
-        <p>Descubre qué peinados, gafas y escotes te sientan mejor</p>
-    </header>
+  <header>
+    <h1>Análisis Facial Personalizado</h1>
+  </header>
 
-    <main>
-        <section class="camera-section">
-            <div class="camera-container">
-                <video id="video" autoplay playsinline></video>
-                <canvas id="overlay" class="hidden"></canvas>
-                <div id="loading" class="loading-indicator">
-                    <div class="spinner"></div>
-                    <p>Cargando modelos de detección...</p>
-                </div>
-            </div>
-            <div class="camera-controls">
-                <button id="startCamera" class="btn primary">Iniciar Cámara</button>
-                <button id="analyzeFace" class="btn secondary" disabled>Analizar Rostro</button>
-                <button id="retryAnalysis" class="btn secondary hidden">Reintentar</button>
-                <button id="toggleLandmarks" class="btn secondary hidden">Mostrar Puntos Clave</button>
-            </div>
-        </section>
+  <main>
+    <button id="startCameraBtn">Iniciar Cámara</button>
+    <button id="analyzeFaceBtn" disabled>Analizar Rostro</button>
+    <button id="retryAnalysisBtn" class="hidden">Reintentar</button>
+    <button id="toggleLandmarksBtn">Mostrar Puntos Clave</button>
+    <div id="videoContainer">
+      <video id="video" autoplay muted></video>
+      <canvas id="tryonCanvas"></canvas>
+    </div>
+    <div id="recommendationsContainer"></div>
+  </main>
 
-        <section id="resultsSection" class="results-section hidden">
-            <div class="face-shape-result">
-                <h2>Tu forma de rostro</h2>
-                <div class="shape-display">
-                    <div id="shapeIcon" class="shape-icon"></div>
-                    <h3 id="shapeResult">Análisis en progreso...</h3>
-                </div>
-            </div>
-
-            <div class="recommendations">
-                <h2>Recomendaciones personalizadas</h2>
-                <div class="recommendation-tabs">
-                    <button class="tab-btn active" data-tab="hairstyles">Peinados</button>
-                    <button class="tab-btn" data-tab="glasses">Gafas</button>
-                    <button class="tab-btn" data-tab="necklines">Escotes</button>
-                    <button class="tab-btn" data-tab="tryon">Probar</button>
-                </div>
-                
-                <div id="hairstyles" class="tab-content active">
-                    <div id="hairstyleRecommendations" class="recommendation-list">
-                        <!-- Recomendaciones de peinados se insertarán aquí -->
-                    </div>
-                </div>
-                
-                <div id="glasses" class="tab-content">
-                    <div id="glassesRecommendations" class="recommendation-list">
-                        <!-- Recomendaciones de gafas se insertarán aquí -->
-                    </div>
-                </div>
-                
-                <div id="necklines" class="tab-content">
-                    <div id="necklineRecommendations" class="recommendation-list">
-                        <!-- Recomendaciones de escotes se insertarán aquí -->
-                    </div>
-                </div>
-                
-                <div id="tryon" class="tab-content">
-                    <div class="tryon-container">
-                        <div class="tryon-options">
-                            <h3>Elige una opción para probar</h3>
-                            <div class="tryon-options-list">
-                                <div class="tryon-option-item active" data-type="hairstyle">
-                                    <input type="radio" id="tryon-hairstyle" name="tryon-type" value="hairstyle" checked>
-                                    <label for="tryon-hairstyle">Peinados</label>
-                                </div>
-                                <div class="tryon-option-item" data-type="glasses">
-                                    <input type="radio" id="tryon-glasses" name="tryon-type" value="glasses">
-                                    <label for="tryon-glasses">Gafas</label>
-                                </div>
-                                <div class="tryon-option-item" data-type="makeup">
-                                    <input type="radio" id="tryon-makeup" name="tryon-type" value="makeup">
-                                    <label for="tryon-makeup">Maquillaje</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="tryon-preview">
-                            <canvas id="tryonCanvas"></canvas>
-                            <div class="tryon-items-container" id="tryonItemsContainer">
-                                <!-- Elementos para probar se insertarán aquí -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <footer>
-        <p>© 2023 Análisis Facial Personalizado. Todos los derechos reservados.</p>
-    </footer>
-
-    <script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
