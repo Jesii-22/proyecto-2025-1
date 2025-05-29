@@ -1,34 +1,43 @@
-body {
-    font-family: 'Arial', sans-serif;
+/* Reset básico */
+* {
     margin: 0;
     padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f0f2f5;
+    color: #333;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background-color: #f0f2f5;
-    color: #333;
+    padding: 20px;
 }
 
 .container {
     text-align: center;
     max-width: 800px;
-    padding: 20px;
+    width: 100%;
 }
 
 h1 {
     color: #2c3e50;
+    margin-bottom: 20px;
 }
 
 .camera-box {
     position: relative;
-    margin: 20px auto;
-    width: 640px;
+    width: 100%;
+    max-width: 640px;
     height: 480px;
+    margin: 0 auto 20px;
     border: 3px solid #3498db;
-    border-radius: 8px;
+    border-radius: 10px;
     overflow: hidden;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    background: #000;
 }
 
 video, canvas {
@@ -40,7 +49,29 @@ video, canvas {
     object-fit: cover;
 }
 
-.instructions {
+.controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
+
+button {
+    padding: 10px 20px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
     font-size: 16px;
+    transition: background 0.3s;
+}
+
+button:hover {
+    background: #2980b9;
+}
+
+#status {
+    font-size: 14px;
     color: #7f8c8d;
 }

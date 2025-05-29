@@ -3,17 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detección de Rostros + Landmarks</title>
+    <title>Detección Facial con Landmarks</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <h1>Detección Facial con Landmarks</h1>
+        <h1>👁️ Reconocimiento Facial</h1>
         <div class="camera-box">
-            <video id="video" autoplay muted></video>
+            <video id="video" autoplay muted playsinline></video>
             <canvas id="canvas"></canvas>
         </div>
-        <p class="instructions">Permite el acceso a la cámara para comenzar.</p>
+        <div class="controls">
+            <button id="toggleCamera">Iniciar Cámara</button>
+            <p id="status">Estado: Esperando inicio...</p>
+        </div>
     </div>
     <script src="script.js"></script>
 </body>
