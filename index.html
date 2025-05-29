@@ -1,44 +1,20 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Analiza tu forma de rostro y descubre peinados y gafas ideales" />
-  <title>StyleMatch Lite | Análisis Facial</title>
-  <link rel="stylesheet" href="styles.css" />
-  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detección de Rostros + Landmarks</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="container">
-    <header class="app-header">
-      <h1>StyleMatch Lite</h1>
-      <p class="subtitle">Descubre qué estilos te favorecen según tu rostro</p>
-    </header>
-    <main class="app-content">
-      <div class="camera-frame">
-        <div class="video-container">
-          <video id="video" width="640" height="480" autoplay muted playsinline></video>
-          <canvas id="canvas" width="640" height="480"></canvas>
-          <div class="camera-guide"></div>
+    <div class="container">
+        <h1>Detección Facial con Landmarks</h1>
+        <div class="camera-box">
+            <video id="video" autoplay muted></video>
+            <canvas id="canvas"></canvas>
         </div>
-      </div>
-      <div class="controls">
-        <button id="start-btn" class="primary-btn">
-          <span class="btn-icon">📷</span> Analizar mi rostro
-        </button>
-      </div>
-      <section id="results" class="results-container" aria-live="polite">
-        <div class="initial-message">
-          <p>Presiona el botón para comenzar el análisis facial</p>
-          <ul class="tips">
-            <li>▸ Asegura buena iluminación</li>
-            <li>▸ Mantén el rostro centrado</li>
-            <li>▸ Quita gafas oscuras</li>
-          </ul>
-        </div>
-      </section>
-    </main>
-  </div>
-  <script src="script.js"></script>
+        <p class="instructions">Permite el acceso a la cámara para comenzar.</p>
+    </div>
+    <script src="script.js"></script>
 </body>
 </html>
