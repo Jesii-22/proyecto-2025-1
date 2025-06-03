@@ -45,6 +45,8 @@ class FaceDetectionApp {
     }
 
     updateDetectionConfig() {
+      
+  
         this.detectionConfig = {
             showPoints: this.showPointsCheckbox.checked,
             showContour: this.showContourCheckbox.checked,
@@ -60,10 +62,12 @@ class FaceDetectionApp {
     }
 
     async loadMediaPipe() {
+    
         try {
             this.faceMesh = new FaceMesh({
                 locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
             });
+
 
             await this.faceMesh.setOptions({
                 maxNumFaces: 1,
@@ -91,6 +95,7 @@ class FaceDetectionApp {
     }
 
     async startCamera() {
+      
         try {
             this.stream = await navigator.mediaDevices.getUserMedia({
                 video: {
@@ -123,6 +128,7 @@ class FaceDetectionApp {
     }
 
     processVideoFrame() {
+          console.log("RESULTADO");
         if (!this.stream) return;
 
         const now = performance.now();
