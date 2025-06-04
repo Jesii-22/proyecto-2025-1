@@ -18,7 +18,7 @@ class FaceDetectionApp {
         this.lastTimestamp = 0;
         this.frameCount = 0;
         this.currentFPS = 0;
-        this.lastShapeDetection = 0; // Nuevo: para controlar frecuencia de detección
+        this.lastShapeDetection = 0; 
         this.detectionConfig = {
             showPoints: true,
             showContour: true,
