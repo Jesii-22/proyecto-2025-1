@@ -1,5 +1,6 @@
 class FaceDetectionApp {
     constructor() {
+        // Elementos del DOM
         this.video = document.getElementById('video');
         this.canvas = document.getElementById('canvas');
         this.ctx = this.canvas.getContext('2d');
@@ -10,16 +11,47 @@ class FaceDetectionApp {
         this.showContourCheckbox = document.getElementById('showContour');
         this.sensitivitySlider = document.getElementById('sensitivity');
 
+        // Variables de estado
         this.stream = null;
         this.faceMesh = null;
         this.animationFrameId = null;
         this.lastTimestamp = 0;
         this.frameCount = 0;
         this.currentFPS = 0;
+        this.lastShapeDetection = 0; // Nuevo: para controlar frecuencia de detección
         this.detectionConfig = {
             showPoints: true,
             showContour: true,
             sensitivity: 0.5
+        };
+
+        // Diccionario de peinados (nuevo)
+        this.HAIRSTYLES_BY_FACE = {
+            ovalada: [
+                "Corte largo con capas", 
+                "Flequillo recto", 
+                "Corte bob"
+            ],
+            redonda: [
+                "Peinados altos para alargar", 
+                "Capas asimétricas", 
+                "Flequillo lateral"
+            ],
+            cuadrada: [
+                "Ondas suaves", 
+                "Corte pixie", 
+                "Rulos para suavizar"
+            ],
+            alargada: [
+                "Corte corto con volumen", 
+                "Flequillo grueso", 
+                "Ondas horizontales"
+            ],
+            corazón: [
+                "Cascada de rizos", 
+                "Media melena", 
+                "Flequillo en pico"
+            ]
         };
 
         this.init();
@@ -148,21 +180,85 @@ class FaceDetectionApp {
         this.animationFrameId = requestAnimationFrame(() => this.processVideoFrame());
     }
 
+   
     processResults(results) {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        if (results.multiFaceLandmarks) {
-            for (const landmarks of results.multiFaceLandmarks) {
-                if (this.detectionConfig.showPoints) {
-                    this.drawLandmarks(landmarks);
-                }
-                if (this.detectionConfig.showContour) {
-                    this.drawFaceContour(landmarks);
-                }
+        this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+
+        if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+            const landmarks = results.multiFaceLandmarks[0];
+            
+            // 1. Determinar tipo de rostro (nuevo)
+            const faceShape = this.determineFaceShape(landmarks);
+            
+            // 2. Mostrar sugerencias (cada 5 segundos)
+            if (!this.lastShapeDetection || Date.now() - this.lastShapeDetection > 5000) {
+                this.showHairstyleSuggestions(faceShape);
+                this.lastShapeDetection = Date.now();
             }
+
+            // 3. Dibujar landmarks (original)
+            if (this.detectionConfig.showPoints) this.drawLandmarks(landmarks);
+            if (this.detectionConfig.showContour) this.drawFaceContour(landmarks);
         }
     }
 
+    // ===== FUNCIONES NUEVAS =====
+    determineFaceShape(landmarks) {
+        // Puntos clave para cálculos (índices de landmarks)
+        const jawline = [152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234];
+        const forehead = [10];
+        const cheekbones = [454, 234];
+
+        // Calcular distancias
+        const jawWidth = Math.abs(landmarks[jawline[0]].x - landmarks[jawline[10]].x);
+        const faceHeight = Math.abs(landmarks[forehead[0]].y - landmarks[jawline[5]].y);
+        const cheekboneWidth = Math.abs(landmarks[cheekbones[0]].x - landmarks[cheekbones[1]].x);
+
+        // Ratios clave
+        const ratioWidthHeight = jawWidth / faceHeight;
+        const ratioCheekJaw = cheekboneWidth / jawWidth;
+
+        // Clasificación (valores ajustables)
+        if (ratioWidthHeight > 0.75 && ratioCheekJaw > 0.9) {
+            return "redonda";
+        } else if (ratioWidthHeight < 0.7 && ratioCheekJaw > 0.85) {
+            return "ovalada";
+        } else if (ratioWidthHeight > 0.8 && ratioCheekJaw < 0.85) {
+            return "cuadrada";
+        } else if (ratioWidthHeight < 0.65) {
+            return "alargada";
+        } else {
+            return "corazón";
+        }
+    }
+
+    showHairstyleSuggestions(faceShape) {
+        const suggestions = this.HAIRSTYLES_BY_FACE[faceShape] || [];
+        const suggestionsHTML = suggestions.map(s => `<li>${s}</li>`).join('');
+        
+        let container = document.getElementById('hairstyle-suggestions');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'hairstyle-suggestions';
+            container.style.cssText = `
+                margin-top: 20px;
+                padding: 15px;
+                background: #f8f9fa;
+                border-radius: 8px;
+            `;
+            container.innerHTML = `
+                <h3 style="color: #2c3e50; margin-top: 0;">Para rostro ${faceShape}:</h3>
+                <ul style="padding-left: 20px; margin-bottom: 0;">${suggestionsHTML}</ul>
+            `;
+            document.querySelector('.container').appendChild(container);
+        } else {
+            container.innerHTML = `
+                <h3 style="color: #2c3e50; margin-top: 0;">Para rostro ${faceShape}:</h3>
+                <ul style="padding-left: 20px; margin-bottom: 0;">${suggestionsHTML}</ul>
+            `;
+        }
+    }
     drawLandmarks(landmarks) {
         this.ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
         for (const point of landmarks) {
