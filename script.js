@@ -208,6 +208,9 @@ async function processCapturedImage(file) {
         confirmButton.style.display = 'inline-block';
         retakeButton.style.display = 'inline-block';
 
+        // Guardar la foto optimizada
+        capturedPhoto = optimizedFile;
+
         // Ocultar la pantalla de carga si está visible
         pantallaCargando.classList.add('oculta');
         loadingOverlay.classList.remove('active');
@@ -225,41 +228,29 @@ async function processCapturedImage(file) {
 
 // Event listener para el botón de confirmar
 confirmButton.addEventListener('click', async () => {
-    if (!capturedPhoto) {
-        alert('No hay foto para confirmar. Por favor, toma una foto primero.');
-        return;
-    }
-
     try {
-        // Verificar el tamaño del archivo
-        if (capturedPhoto.size > 300000) {
-            alert('La imagen es demasiado grande. Por favor, intenta tomar la foto de nuevo.');
-            resetCameraUI();
-            return;
+        if (!capturedPhoto) {
+            throw new Error('No hay foto para confirmar. Por favor, toma una foto primero.');
         }
 
-        stopCamera();
-        // Ocultar la imagen de la cámara y los botones
-        capturedImage.style.display = 'none';
-        confirmButton.style.display = 'none';
-        retakeButton.style.display = 'none';
-
-        // Mostrar loading antes de procesar
-        mostrarPantallaCargando();
-
-        // Verificar el archivo antes de procesar
-        console.log('Procesando foto:', capturedPhoto, 'Tipo:', capturedPhoto.type, 'Tamaño:', capturedPhoto.size);
-
-        if (capturedPhoto.size < 10000) {
-            throw new Error('La imagen capturada es demasiado pequeña o inválida');
+        // Detener la cámara
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
         }
 
+        // Mostrar pantalla de carga
+        pantallaCargando.classList.remove('oculta');
+        loadingOverlay.classList.add('active');
+
+        // Procesar la foto optimizada
         await processImage(capturedPhoto);
     } catch (error) {
-        console.error('Error al confirmar foto:', error);
-        alert('Hubo un error al procesar la foto. Por favor, intenta de nuevo.');
-        ocultarPantallaCargando();
-        resetCameraUI();
+        console.error('Error al confirmar la foto:', error);
+        alert(error.message);
+        // Asegurar que se oculte la pantalla de carga
+        pantallaCargando.classList.add('oculta');
+        loadingOverlay.classList.remove('active');
     }
 });
 
@@ -327,7 +318,7 @@ async function sendToGemini(file) {
             const requestBody = {
                 contents: [{
                     parts: [{
-                        text: "Analiza esta imagen y proporciona recomendaciones de peinados basadas en la forma del rostro. Incluye:\n\n1. Un análisis detallado de la forma del rostro\n2. Tres recomendaciones de peinados específicos\n3. Explicación de por qué cada peinado sería beneficioso\n4. Sugerencias de estilos y técnicas de peinado\n\nFormato de respuesta:\n\nANÁLISIS DEL ROSTRO:\n[Análisis detallado]\n\nRECOMENDACIONES DE PEINADOS:\n\n1. [Nombre del peinado]\n- Descripción: [Descripción detallada]\n- Beneficios: [Explicación de por qué funciona bien]\n- Técnicas: [Sugerencias de técnicas]\n\n2. [Nombre del peinado]\n- Descripción: [Descripción detallada]\n- Beneficios: [Explicación de por qué funciona bien]\n- Técnicas: [Sugerencias de técnicas]\n\n3. [Nombre del peinado]\n- Descripción: [Descripción detallada]\n- Beneficios: [Explicación de por qué funciona bien]\n- Técnicas: [Sugerencias de técnicas]\n\nCONSEJOS ADICIONALES:\n[Lista de consejos generales para el cuidado y mantenimiento del cabello]"
+                        text: "Analiza esta imagen y proporciona recomendaciones de peinados basadas en la forma del rostro. Incluye:\n\n1. Un análisis detallado de la forma del rostro\n2. Tres recomendaciones de peinados específicos\n3. Explicación de por qué cada peinado sería beneficioso\n4. Sugerencias de estilos y técnicas de peinado\n\nFormato de respuesta:\n\nANÁLISIS DEL ROSTRO:\n[Análisis detallado]\n\nRECOMENDACIONES DE PEINADOS:\n\n1. [Nombre del peinado]\n- Descripción: [Descripción detallada]\n- Beneficios: [Explicación de por qué funciona bien]\n- Técnicas: [Sugerencias de técnicas]\n- Búsqueda: [Términos de búsqueda en inglés para Google Images]\n\n2. [Nombre del peinado]\n- Descripción: [Descripción detallada]\n- Beneficios: [Explicación de por qué funciona bien]\n- Técnicas: [Sugerencias de técnicas]\n- Búsqueda: [Términos de búsqueda en inglés para Google Images]\n\n3. [Nombre del peinado]\n- Descripción: [Descripción detallada]\n- Beneficios: [Explicación de por qué funciona bien]\n- Técnicas: [Sugerencias de técnicas]\n- Búsqueda: [Términos de búsqueda en inglés para Google Images]\n\nCONSEJOS ADICIONALES:\n[Lista de consejos generales para el cuidado y mantenimiento del cabello]"
                     }, {
                         inline_data: {
                             mime_type: "image/png",
@@ -384,14 +375,22 @@ async function sendToGemini(file) {
                     const description = lines.find(line => line.startsWith('- Descripción:'))?.replace('- Descripción:', '').trim() || '';
                     const beneficios = lines.find(line => line.startsWith('- Beneficios:'))?.replace('- Beneficios:', '').trim() || '';
                     const tecnicas = lines.find(line => line.startsWith('- Técnicas:'))?.replace('- Técnicas:', '').trim() || '';
+                    const busqueda = lines.find(line => line.startsWith('- Búsqueda:'))?.replace('- Búsqueda:', '').trim() || title;
 
                     card.innerHTML = `
-                        <h3>${title}</h3>
+                        <h3>✂️ ${title}</h3>
                         <p>${description}</p>
                         <p><strong>Beneficios:</strong> ${beneficios}</p>
                         <p><strong>Técnicas:</strong> ${tecnicas}</p>
-                        <iframe class="preview-frame" src="https://www.youtube.com/embed/dQw4w9WgXcQ" allowfullscreen></iframe>
-                        <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(title + ' tutorial')}" target="_blank">Ver tutorial en YouTube</a>
+                        <iframe class="preview-frame" 
+                                src="https://www.google.com/search?igu=1&q=${encodeURIComponent(busqueda)}&tbm=isch"
+                                loading="lazy">
+                        </iframe>
+                        <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(busqueda)}" 
+                           target="_blank" 
+                           rel="noopener noreferrer">
+                            Ver más ejemplos
+                        </a>
                     `;
 
                     cards.appendChild(card);
