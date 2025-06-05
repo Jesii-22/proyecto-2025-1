@@ -185,17 +185,12 @@ async function optimizeImage(file) {
 // Función para procesar la imagen capturada
 async function processCapturedImage(file) {
     try {
-        // Verificar el tamaño del blob
-        if (file.size > 300 * 1024) { // 300KB
-            throw new Error('La imagen es demasiado grande. Por favor, intenta con una imagen más pequeña.');
-        }
-
         // Verificar el tipo MIME
         if (!file.type.startsWith('image/')) {
             throw new Error('El archivo no es una imagen válida');
         }
 
-        // Optimizar la imagen
+        // Optimizar la imagen sin importar el tamaño inicial
         const optimizedFile = await optimizeImage(file);
         console.log('Archivo optimizado:', optimizedFile.name, optimizedFile.type, optimizedFile.size);
 
