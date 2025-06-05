@@ -17,6 +17,9 @@ const preview = document.getElementById('preview');
 const loading = document.getElementById('loading');
 const faceAnalysis = document.getElementById('faceAnalysis');
 const cards = document.getElementById('cards');
+const pantallaCargando = document.getElementById('pantallaCargando');
+const loadingOverlay = document.getElementById('loadingOverlay');
+const faceType = document.getElementById('faceType');
 
 let stream = null;
 let capturedPhoto = null;
@@ -128,21 +131,40 @@ captureButton.addEventListener('click', () => {
 });
 
 // Función para procesar la imagen capturada
-function processCapturedImage(file) {
-    // Guardar la foto capturada
-    capturedPhoto = file;
+async function processCapturedImage(file) {
+    try {
+        // Verificar el tamaño del blob
+        if (file.size > 300 * 1024) { // 300KB
+            throw new Error('La imagen es demasiado grande. Por favor, intenta con una imagen más pequeña.');
+        }
 
-    // Mostrar la imagen capturada
-    capturedImage.src = URL.createObjectURL(file);
-    capturedImage.style.display = 'block';
-    video.style.display = 'none';
+        // Verificar el tipo MIME
+        if (!file.type.startsWith('image/')) {
+            throw new Error('El archivo no es una imagen válida');
+        }
 
-    // Actualizar UI
-    captureButton.style.display = 'none';
-    confirmButton.style.display = 'block';
-    retakeButton.style.display = 'block';
+        // Mostrar la imagen capturada
+        const imageUrl = URL.createObjectURL(file);
+        capturedImage.src = imageUrl;
+        capturedImage.style.display = 'block';
+        video.style.display = 'none';
+        captureButton.style.display = 'none';
+        confirmButton.style.display = 'inline-block';
+        retakeButton.style.display = 'inline-block';
 
-    console.log('Foto capturada:', file, 'Tipo:', file.type, 'Tamaño:', file.size);
+        // Ocultar la pantalla de carga si está visible
+        pantallaCargando.classList.add('oculta');
+        loadingOverlay.classList.remove('active');
+
+        return file;
+    } catch (error) {
+        console.error('Error al procesar la imagen:', error);
+        alert(error.message);
+        // Asegurar que se oculte la pantalla de carga
+        pantallaCargando.classList.add('oculta');
+        loadingOverlay.classList.remove('active');
+        throw error;
+    }
 }
 
 // Event listener para el botón de confirmar
@@ -198,121 +220,134 @@ fileInput.addEventListener('change', async (e) => {
     }
 });
 
+// Función para procesar la imagen
 async function processImage(file) {
-    // Mostrar la imagen
-    const img = document.createElement('img');
-    img.src = URL.createObjectURL(file);
-    preview.innerHTML = '';
-    preview.appendChild(img);
-
-    // Log para debug
-    console.log('Archivo a procesar:', file, 'Tipo:', file.type, 'Tamaño:', file.size);
-
-    // Mostrar loading
-    loading.classList.add('active');
-    document.getElementById('loadingOverlay').style.display = 'flex';
-    mostrarPantallaCargando();
-    faceAnalysis.style.display = 'none';
-    cards.innerHTML = '';
-
     try {
-        // Convertir la imagen a base64
+        // Verificar el tipo MIME
+        if (!file.type.startsWith('image/')) {
+            throw new Error('El archivo no es una imagen válida');
+        }
+
+        // Verificar el tamaño del archivo
+        if (file.size > 300 * 1024) { // 300KB
+            throw new Error('La imagen es demasiado grande. Por favor, intenta con una imagen más pequeña.');
+        }
+
+        // Mostrar la imagen
         const reader = new FileReader();
-        reader.onload = async function (e) {
-            const base64Image = e.target.result.split(',')[1];
-            // Detectar el tipo MIME real del archivo
-            const mimeType = file.type || 'image/png';
-            // Pasar el tipo MIME a analyzeImage
-            const analysis = await analyzeImage(base64Image, mimeType);
-
-            // Mostrar el tipo de rostro
-            document.getElementById('faceType').textContent = analysis.faceType;
-            faceAnalysis.style.display = 'block';
-
-            // Mostrar las recomendaciones
-            analysis.recommendations.forEach(p => {
-                const div = document.createElement('div');
-                div.className = 'card';
-                div.innerHTML = `
-                    <h3>✂️ ${p.name}</h3>
-                    <p>${p.description}</p>
-                    <iframe class="preview-frame" 
-                            src="https://www.google.com/search?igu=1&q=${encodeURIComponent(p.query)}&tbm=isch"
-                            loading="lazy">
-                    </iframe>
-                    <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(p.query)}" 
-                       target="_blank" 
-                       rel="noopener noreferrer">
-                        Ver más ejemplos
-                    </a>
-                `;
-                cards.appendChild(div);
-            });
-            // Ocultar loading SOLO después de mostrar las tarjetas
-            loading.classList.remove('active');
-            document.getElementById('loadingOverlay').style.display = 'none';
-            ocultarPantallaCargando();
+        reader.onload = (e) => {
+            preview.innerHTML = `<img src="${e.target.result}" alt="Vista previa">`;
         };
         reader.readAsDataURL(file);
+
+        // Enviar a Gemini
+        await sendToGemini(file);
     } catch (error) {
-        console.error('Error:', error);
-        alert('Hubo un error al analizar la imagen. Por favor, intenta de nuevo.');
-        loading.classList.remove('active');
-        document.getElementById('loadingOverlay').style.display = 'none';
-        ocultarPantallaCargando();
+        console.error('Error al procesar la imagen:', error);
+        alert(error.message);
+        // Asegurar que se oculte la pantalla de carga
+        pantallaCargando.classList.add('oculta');
+        loadingOverlay.classList.remove('active');
     }
 }
 
-async function analyzeImage(imageData, mimeType) {
+// Función para enviar a Gemini
+async function sendToGemini(file) {
     try {
-        // Verificar que el tipo MIME sea PNG
-        if (mimeType !== 'image/png') {
-            throw new Error('La imagen debe estar en formato PNG');
-        }
+        // Mostrar pantalla de carga
+        pantallaCargando.classList.remove('oculta');
+        loadingOverlay.classList.add('active');
 
-        const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+
+        reader.onload = async () => {
+            const base64Image = reader.result.split(',')[1];
+
+            const requestBody = {
                 contents: [{
                     parts: [{
-                        text: "Analiza esta imagen de un rostro humano y recomienda 3 peinados que se adapten bien a la forma de la cara. Para cada peinado, proporciona: 1) Nombre del peinado, 2) Breve descripción, 3) Tipo de rostro al que mejor se adapta, 4) Una query de búsqueda en inglés para Google Images. RESPONDE SOLO EN ESPAÑOL y SOLO con el JSON, sin markdown ni backticks, con esta estructura: {faceType: 'tipo de rostro', recommendations: [{name: 'nombre', description: 'descripción', query: 'términos de búsqueda en inglés'}]}"
+                        text: "Analiza esta imagen y proporciona recomendaciones de peinados basadas en la forma del rostro. Incluye:\n\n1. Un análisis detallado de la forma del rostro\n2. Tres recomendaciones de peinados específicos\n3. Explicación de por qué cada peinado sería beneficioso\n4. Sugerencias de estilos y técnicas de peinado\n\nFormato de respuesta:\n\nANÁLISIS DEL ROSTRO:\n[Análisis detallado]\n\nRECOMENDACIONES DE PEINADOS:\n\n1. [Nombre del peinado]\n- Descripción: [Descripción detallada]\n- Beneficios: [Explicación de por qué funciona bien]\n- Técnicas: [Sugerencias de técnicas]\n\n2. [Nombre del peinado]\n- Descripción: [Descripción detallada]\n- Beneficios: [Explicación de por qué funciona bien]\n- Técnicas: [Sugerencias de técnicas]\n\n3. [Nombre del peinado]\n- Descripción: [Descripción detallada]\n- Beneficios: [Explicación de por qué funciona bien]\n- Técnicas: [Sugerencias de técnicas]\n\nCONSEJOS ADICIONALES:\n[Lista de consejos generales para el cuidado y mantenimiento del cabello]"
                     }, {
                         inline_data: {
-                            mime_type: 'image/png',
-                            data: imageData
+                            mime_type: "image/png",
+                            data: base64Image
                         }
                     }]
                 }]
-            })
-        });
+            };
 
-        if (!response.ok) {
-            if (response.status === 503) {
-                throw new Error('El servicio de Gemini está temporalmente no disponible. Por favor, intenta de nuevo en unos minutos.');
+            const response = await fetch(GEMINI_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-goog-api-key': GEMINI_API_KEY
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error en la API: ${response.status} ${response.statusText}`);
             }
-            throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
-        }
 
-        const data = await response.json();
-        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0] || !data.candidates[0].content.parts[0].text) {
-            throw new Error('La API no devolvió una respuesta válida. Puede que la imagen no sea adecuada o haya un problema de conexión.');
-        }
-        const responseText = data.candidates[0].content.parts[0].text;
+            const data = await response.json();
+            console.log('Respuesta de Gemini:', data);
 
-        // Limpiar la respuesta de posibles backticks y markdown
-        const cleanJson = responseText
-            .replace(/```json\n?/g, '')
-            .replace(/```\n?/g, '')
-            .trim();
+            if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+                throw new Error('La API no devolvió una respuesta válida');
+            }
 
-        return JSON.parse(cleanJson);
+            const text = data.candidates[0].content.parts[0].text;
+            console.log('Texto de la respuesta:', text);
+
+            // Procesar la respuesta
+            const sections = text.split('\n\n');
+            let currentSection = '';
+            let currentContent = '';
+
+            sections.forEach(section => {
+                if (section.startsWith('ANÁLISIS DEL ROSTRO:')) {
+                    currentSection = 'análisis';
+                    currentContent = section.replace('ANÁLISIS DEL ROSTRO:', '').trim();
+                    faceType.textContent = currentContent;
+                    faceAnalysis.style.display = 'block';
+                } else if (section.startsWith('RECOMENDACIONES DE PEINADOS:')) {
+                    currentSection = 'recomendaciones';
+                } else if (section.startsWith('CONSEJOS ADICIONALES:')) {
+                    currentSection = 'consejos';
+                } else if (currentSection === 'recomendaciones' && section.match(/^\d+\./)) {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+
+                    const lines = section.split('\n');
+                    const title = lines[0].replace(/^\d+\.\s*/, '');
+                    const description = lines.find(line => line.startsWith('- Descripción:'))?.replace('- Descripción:', '').trim() || '';
+                    const beneficios = lines.find(line => line.startsWith('- Beneficios:'))?.replace('- Beneficios:', '').trim() || '';
+                    const tecnicas = lines.find(line => line.startsWith('- Técnicas:'))?.replace('- Técnicas:', '').trim() || '';
+
+                    card.innerHTML = `
+                        <h3>${title}</h3>
+                        <p>${description}</p>
+                        <p><strong>Beneficios:</strong> ${beneficios}</p>
+                        <p><strong>Técnicas:</strong> ${tecnicas}</p>
+                        <iframe class="preview-frame" src="https://www.youtube.com/embed/dQw4w9WgXcQ" allowfullscreen></iframe>
+                        <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(title + ' tutorial')}" target="_blank">Ver tutorial en YouTube</a>
+                    `;
+
+                    cards.appendChild(card);
+                }
+            });
+
+            // Ocultar pantallas de carga
+            pantallaCargando.classList.add('oculta');
+            loadingOverlay.classList.remove('active');
+        };
     } catch (error) {
-        console.error('Error al analizar la imagen:', error);
-        alert('No se pudo analizar la imagen. ' + error.message);
-        throw error;
+        console.error('Error al enviar a Gemini:', error);
+        alert(`Error al analizar la imagen: ${error.message}`);
+        // Asegurar que se oculte la pantalla de carga
+        pantallaCargando.classList.add('oculta');
+        loadingOverlay.classList.remove('active');
     }
 }
 
