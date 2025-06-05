@@ -130,6 +130,58 @@ captureButton.addEventListener('click', () => {
     }, 'image/png', 0.8); // Reducir calidad inicial a 80%
 });
 
+// Función para optimizar el tamaño de la imagen
+async function optimizeImage(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                // Crear un canvas con dimensiones reducidas
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 800;
+                const MAX_HEIGHT = 800;
+                let width = img.width;
+                let height = img.height;
+
+                // Calcular nuevas dimensiones manteniendo la proporción
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height = Math.round((height * MAX_WIDTH) / width);
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width = Math.round((width * MAX_HEIGHT) / height);
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+
+                // Dibujar la imagen redimensionada
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Convertir a blob con calidad reducida
+                canvas.toBlob((blob) => {
+                    // Crear un nuevo archivo con el blob optimizado
+                    const optimizedFile = new File([blob], file.name, {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+                    resolve(optimizedFile);
+                }, 'image/jpeg', 0.7); // Calidad del 70%
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
 // Función para procesar la imagen capturada
 async function processCapturedImage(file) {
     try {
@@ -143,8 +195,12 @@ async function processCapturedImage(file) {
             throw new Error('El archivo no es una imagen válida');
         }
 
+        // Optimizar la imagen
+        const optimizedFile = await optimizeImage(file);
+        console.log('Archivo optimizado:', optimizedFile.name, optimizedFile.type, optimizedFile.size);
+
         // Mostrar la imagen capturada
-        const imageUrl = URL.createObjectURL(file);
+        const imageUrl = URL.createObjectURL(optimizedFile);
         capturedImage.src = imageUrl;
         capturedImage.style.display = 'block';
         video.style.display = 'none';
@@ -156,7 +212,7 @@ async function processCapturedImage(file) {
         pantallaCargando.classList.add('oculta');
         loadingOverlay.classList.remove('active');
 
-        return file;
+        return optimizedFile;
     } catch (error) {
         console.error('Error al procesar la imagen:', error);
         alert(error.message);
@@ -233,15 +289,19 @@ async function processImage(file) {
             throw new Error('La imagen es demasiado grande. Por favor, intenta con una imagen más pequeña.');
         }
 
+        // Optimizar la imagen
+        const optimizedFile = await optimizeImage(file);
+        console.log('Archivo optimizado:', optimizedFile.name, optimizedFile.type, optimizedFile.size);
+
         // Mostrar la imagen
         const reader = new FileReader();
         reader.onload = (e) => {
             preview.innerHTML = `<img src="${e.target.result}" alt="Vista previa">`;
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(optimizedFile);
 
         // Enviar a Gemini
-        await sendToGemini(file);
+        await sendToGemini(optimizedFile);
     } catch (error) {
         console.error('Error al procesar la imagen:', error);
         alert(error.message);
