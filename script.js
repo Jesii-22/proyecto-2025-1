@@ -1,331 +1,419 @@
-class FaceDetectionApp {
-    constructor() {
-        // Elementos del DOM
-        this.video = document.getElementById('video');
-        this.canvas = document.getElementById('canvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.toggleBtn = document.getElementById('toggleCamera');
-        this.statusText = document.getElementById('status');
-        this.fpsCounter = document.getElementById('fpsCounter');
-        this.showPointsCheckbox = document.getElementById('showPoints');
-        this.showContourCheckbox = document.getElementById('showContour');
-        this.sensitivitySlider = document.getElementById('sensitivity');
+// Reemplaza esto con tu API key de Google Gemini
+const GEMINI_API_KEY = 'AIzaSyCwFKPO-Zec8uIG2Sl5zAAr9SMPoOdtyMc';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
-        // Variables de estado
-        this.stream = null;
-        this.faceMesh = null;
-        this.animationFrameId = null;
-        this.lastTimestamp = 0;
-        this.frameCount = 0;
-        this.currentFPS = 0;
-        this.lastShapeDetection = 0; 
-        this.detectionConfig = {
-            showPoints: true,
-            showContour: true,
-            sensitivity: 0.5
-        };
+// Elementos del DOM
+const fileOption = document.getElementById('fileOption');
+const cameraOption = document.getElementById('cameraOption');
+const fileInputContainer = document.getElementById('fileInputContainer');
+const cameraContainer = document.getElementById('cameraContainer');
+const video = document.getElementById('video');
+const captureButton = document.getElementById('captureButton');
+const confirmButton = document.getElementById('confirmButton');
+const retakeButton = document.getElementById('retakeButton');
+const capturedImage = document.getElementById('capturedImage');
+const fileInput = document.getElementById('fileInput');
+const preview = document.getElementById('preview');
+const loading = document.getElementById('loading');
+const faceAnalysis = document.getElementById('faceAnalysis');
+const cards = document.getElementById('cards');
+const pantallaCargando = document.getElementById('pantallaCargando');
+const loadingOverlay = document.getElementById('loadingOverlay');
+const faceType = document.getElementById('faceType');
 
-        // Diccionario de peinados (nuevo)
-        this.HAIRSTYLES_BY_FACE = {
-            ovalada: [
-                "Corte largo con capas", 
-                "Flequillo recto", 
-                "Corte bob"
-            ],
-            redonda: [
-                "Peinados altos para alargar", 
-                "Capas asimétricas", 
-                "Flequillo lateral"
-            ],
-            cuadrada: [
-                "Ondas suaves", 
-                "Corte pixie", 
-                "Rulos para suavizar"
-            ],
-            alargada: [
-                "Corte corto con volumen", 
-                "Flequillo grueso", 
-                "Ondas horizontales"
-            ],
-            corazón: [
-                "Cascada de rizos", 
-                "Media melena", 
-                "Flequillo en pico"
-            ]
-        };
+let stream = null;
+let capturedPhoto = null;
 
-        this.init();
-    }
-
-    async init() {
-        try {
-            this.setupEventListeners();
-            await this.loadMediaPipe();
-            this.updateDetectionConfig();
-            this.statusText.textContent = "Sistema listo";
-            this.statusText.style.color = "#2ecc71";
-        } catch (error) {
-            this.handleError("Error al inicializar:", error);
-        }
-    }
-
-    setupEventListeners() {
-        this.toggleBtn.addEventListener('click', () => this.toggleCamera());
-        this.showPointsCheckbox.addEventListener('change', () => this.updateDetectionConfig());
-        this.showContourCheckbox.addEventListener('change', () => this.updateDetectionConfig());
-        this.sensitivitySlider.addEventListener('input', () => this.updateDetectionConfig());
-    }
-
-    updateDetectionConfig() {
-      
-  
-        this.detectionConfig = {
-            showPoints: this.showPointsCheckbox.checked,
-            showContour: this.showContourCheckbox.checked,
-            sensitivity: parseFloat(this.sensitivitySlider.value)
-        };
-
-        if (this.faceMesh) {
-            this.faceMesh.setOptions({
-                minDetectionConfidence: this.detectionConfig.sensitivity,
-                minTrackingConfidence: this.detectionConfig.sensitivity
-            });
-        }
-    }
-
-    async loadMediaPipe() {
-    
-        try {
-            this.faceMesh = new FaceMesh({
-                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
-            });
-
-
-            await this.faceMesh.setOptions({
-                maxNumFaces: 1,
-                refineLandmarks: true,
-                minDetectionConfidence: 0.5,
-                minTrackingConfidence: 0.5
-            });
-
-            this.faceMesh.onResults((results) => this.processResults(results));
-        } catch (error) {
-            throw new Error(`Error al cargar MediaPipe: ${error.message}`);
-        }
-    }
-
-    async toggleCamera() {
-        try {
-            if (!this.stream) {
-                await this.startCamera();
-            } else {
-                this.stopCamera();
-            }
-        } catch (error) {
-            this.handleError("Error al alternar cámara:", error);
-        }
-    }
-
-    async startCamera() {
-      
-        try {
-            this.stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    width: { ideal: 640 },
-                    height: { ideal: 480 },
-                    facingMode: "user",
-                    frameRate: { ideal: 30 }
-                }
-            });
-
-            this.video.srcObject = this.stream;
-            
-            this.video.onloadedmetadata = () => {
-                this.canvas.width = this.video.videoWidth;
-                this.canvas.height = this.video.videoHeight;
-                this.statusText.textContent = "Cámara activa";
-                this.statusText.style.color = "#2ecc71";
-                this.toggleBtn.textContent = "Detener Cámara";
-                this.lastTimestamp = performance.now();
-                this.processVideoFrame();
-            };
-
-        } catch (error) {
-            if (error.name === 'NotAllowedError') {
-                this.handleError("Permiso de cámara denegado. Por favor habilita los permisos.");
-            } else {
-                this.handleError("Error al acceder a la cámara:", error);
-            }
-        }
-    }
-
-    processVideoFrame() {
-          console.log("RESULTADO");
-        if (!this.stream) return;
-
-        const now = performance.now();
-        this.frameCount++;
-        
-        if (now - this.lastTimestamp >= 1000) {
-            this.currentFPS = Math.round((this.frameCount * 1000) / (now - this.lastTimestamp));
-            this.fpsCounter.textContent = `FPS: ${this.currentFPS}`;
-            this.lastTimestamp = now;
-            this.frameCount = 0;
-        }
-
-        if (this.faceMesh && this.video.readyState >= 2) {
-            this.faceMesh.send({ image: this.video });
-        }
-
-        this.animationFrameId = requestAnimationFrame(() => this.processVideoFrame());
-    }
-
-   
-    processResults(results) {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
-
-        if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
-            const landmarks = results.multiFaceLandmarks[0];
-            
-            // 1. Determinar tipo de rostro (nuevo)
-            const faceShape = this.determineFaceShape(landmarks);
-            
-            // 2. Mostrar sugerencias (cada 5 segundos)
-            if (!this.lastShapeDetection || Date.now() - this.lastShapeDetection > 5000) {
-                this.showHairstyleSuggestions(faceShape);
-                this.lastShapeDetection = Date.now();
-            }
-
-            // 3. Dibujar landmarks (original)
-            if (this.detectionConfig.showPoints) this.drawLandmarks(landmarks);
-            if (this.detectionConfig.showContour) this.drawFaceContour(landmarks);
-        }
-    }
-
-    // ===== FUNCIONES NUEVAS =====
-    determineFaceShape(landmarks) {
-        // Puntos clave para cálculos (índices de landmarks)
-        const jawline = [152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234];
-        const forehead = [10];
-        const cheekbones = [454, 234];
-
-        // Calcular distancias
-        const jawWidth = Math.abs(landmarks[jawline[0]].x - landmarks[jawline[10]].x);
-        const faceHeight = Math.abs(landmarks[forehead[0]].y - landmarks[jawline[5]].y);
-        const cheekboneWidth = Math.abs(landmarks[cheekbones[0]].x - landmarks[cheekbones[1]].x);
-
-        // Ratios clave
-        const ratioWidthHeight = jawWidth / faceHeight;
-        const ratioCheekJaw = cheekboneWidth / jawWidth;
-
-        // Clasificación (valores ajustables)
-        if (ratioWidthHeight > 0.75 && ratioCheekJaw > 0.9) {
-            return "redonda";
-        } else if (ratioWidthHeight < 0.7 && ratioCheekJaw > 0.85) {
-            return "ovalada";
-        } else if (ratioWidthHeight > 0.8 && ratioCheekJaw < 0.85) {
-            return "cuadrada";
-        } else if (ratioWidthHeight < 0.65) {
-            return "alargada";
-        } else {
-            return "corazón";
-        }
-    }
-
-    showHairstyleSuggestions(faceShape) {
-        const suggestions = this.HAIRSTYLES_BY_FACE[faceShape] || [];
-        const suggestionsHTML = suggestions.map(s => `<li>${s}</li>`).join('');
-        
-        let container = document.getElementById('hairstyle-suggestions');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'hairstyle-suggestions';
-            container.style.cssText = `
-                margin-top: 20px;
-                padding: 15px;
-                background: #f8f9fa;
-                border-radius: 8px;
-            `;
-            container.innerHTML = `
-                <h3 style="color: #2c3e50; margin-top: 0;">Para rostro ${faceShape}:</h3>
-                <ul style="padding-left: 20px; margin-bottom: 0;">${suggestionsHTML}</ul>
-            `;
-            document.querySelector('.container').appendChild(container);
-        } else {
-            container.innerHTML = `
-                <h3 style="color: #2c3e50; margin-top: 0;">Para rostro ${faceShape}:</h3>
-                <ul style="padding-left: 20px; margin-bottom: 0;">${suggestionsHTML}</ul>
-            `;
-        }
-    }
-    drawLandmarks(landmarks) {
-        this.ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
-        for (const point of landmarks) {
-            this.ctx.beginPath();
-            this.ctx.arc(
-                point.x * this.canvas.width,
-                point.y * this.canvas.height,
-                2, 0, 2 * Math.PI
-            );
-            this.ctx.fill();
-        }
-    }
-
-    drawFaceContour(landmarks) {
-        this.ctx.strokeStyle = 'rgba(0, 255, 0, 0.7)';
-        this.ctx.lineWidth = 2;
-        this.ctx.beginPath();
-        
-        const faceOvalIndices = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288];
-        for (let i = 0; i < faceOvalIndices.length; i++) {
-            const index = faceOvalIndices[i];
-            const point = landmarks[index];
-            
-            if (i === 0) {
-                this.ctx.moveTo(
-                    point.x * this.canvas.width,
-                    point.y * this.canvas.height
-                );
-            } else {
-                this.ctx.lineTo(
-                    point.x * this.canvas.width,
-                    point.y * this.canvas.height
-                );
-            }
-        }
-        
-        this.ctx.closePath();
-        this.ctx.stroke();
-    }
-
-    stopCamera() {
-        if (this.stream) {
-            this.stream.getTracks().forEach(track => track.stop());
-            this.video.srcObject = null;
-            this.stream = null;
-            
-            if (this.animationFrameId) {
-                cancelAnimationFrame(this.animationFrameId);
-                this.animationFrameId = null;
-            }
-            
-            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            this.statusText.textContent = "Cámara detenida";
-            this.statusText.style.color = "#7f8c8d";
-            this.toggleBtn.textContent = "Iniciar Cámara";
-            this.fpsCounter.textContent = "FPS: 0";
-        }
-    }
-
-    handleError(message, error = null) {
-        console.error(message, error);
-        this.statusText.textContent = typeof error === 'string' ? error : 
-            error?.message || "Ocurrió un error";
-        this.statusText.style.color = "#e74c3c";
+// Función para cambiar entre opciones
+function switchInput(type) {
+    if (type === 'file') {
+        fileOption.classList.add('active');
+        cameraOption.classList.remove('active');
+        fileInputContainer.classList.add('active');
+        cameraContainer.classList.remove('active');
+        stopCamera();
+        resetCameraUI();
+    } else {
+        fileOption.classList.remove('active');
+        cameraOption.classList.add('active');
+        fileInputContainer.classList.remove('active');
+        cameraContainer.classList.add('active');
+        startCamera();
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    new FaceDetectionApp();
+function resetCameraUI() {
+    captureButton.style.display = 'block';
+    confirmButton.style.display = 'none';
+    retakeButton.style.display = 'none';
+    capturedImage.style.display = 'none';
+    video.style.display = 'block';
+    capturedPhoto = null;
+}
+
+// Función para iniciar la cámara
+async function startCamera() {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: 'user',
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            }
+        });
+        video.srcObject = stream;
+    } catch (err) {
+        console.error('Error al acceder a la cámara:', err);
+        alert('No se pudo acceder a la cámara. Por favor, asegúrate de dar los permisos necesarios.');
+    }
+}
+
+// Función para detener la cámara
+function stopCamera() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+        stream = null;
+    }
+}
+
+// Event listeners para los botones de opción
+fileOption.addEventListener('click', () => switchInput('file'));
+cameraOption.addEventListener('click', () => switchInput('camera'));
+
+// Event listener para el botón de captura
+captureButton.addEventListener('click', () => {
+    if (!video.videoWidth || !video.videoHeight) {
+        alert('La cámara no está lista. Espera unos segundos y vuelve a intentar.');
+        return;
+    }
+
+    // Crear canvas con dimensiones más pequeñas
+    const canvas = document.createElement('canvas');
+    // Reducir dimensiones a 480x360 para optimizar tamaño
+    canvas.width = 480;
+    canvas.height = 360;
+    const ctx = canvas.getContext('2d');
+
+    // Dibujar el frame actual del video con las nuevas dimensiones
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Convertir a blob en formato PNG con compresión
+    canvas.toBlob((blob) => {
+        if (!blob || blob.size < 10000) {
+            alert('La foto capturada no es válida. Intenta tomar la foto de nuevo, asegurándote de que la cámara esté enfocada.');
+            resetCameraUI();
+            return;
+        }
+
+        // Verificar el tamaño del blob
+        console.log('Tamaño del blob antes de procesar:', blob.size);
+
+        // Si el blob es muy grande, intentar reducir más la calidad
+        if (blob.size > 200000) {
+            canvas.toBlob((compressedBlob) => {
+                if (compressedBlob) {
+                    const file = new File([compressedBlob], 'foto_capturada.png', {
+                        type: 'image/png',
+                        lastModified: new Date().getTime()
+                    });
+                    processCapturedImage(file);
+                }
+            }, 'image/png', 0.7); // Reducir calidad a 70%
+        } else {
+            const file = new File([blob], 'foto_capturada.png', {
+                type: 'image/png',
+                lastModified: new Date().getTime()
+            });
+            processCapturedImage(file);
+        }
+    }, 'image/png', 0.8); // Reducir calidad inicial a 80%
 });
+
+// Función para optimizar el tamaño de la imagen
+async function optimizeImage(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                // Crear un canvas con dimensiones reducidas
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 800;
+                const MAX_HEIGHT = 800;
+                let width = img.width;
+                let height = img.height;
+
+                // Calcular nuevas dimensiones manteniendo la proporción
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height = Math.round((height * MAX_WIDTH) / width);
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width = Math.round((width * MAX_HEIGHT) / height);
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+
+                // Dibujar la imagen redimensionada
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Convertir a blob con calidad reducida
+                canvas.toBlob((blob) => {
+                    // Crear un nuevo archivo con el blob optimizado
+                    const optimizedFile = new File([blob], file.name, {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+                    resolve(optimizedFile);
+                }, 'image/jpeg', 0.7); // Calidad del 70%
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+// Función para procesar la imagen capturada
+async function processCapturedImage(file) {
+    try {
+        // Verificar el tamaño del blob
+        if (file.size > 300 * 1024) { // 300KB
+            throw new Error('La imagen es demasiado grande. Por favor, intenta con una imagen más pequeña.');
+        }
+
+        // Verificar el tipo MIME
+        if (!file.type.startsWith('image/')) {
+            throw new Error('El archivo no es una imagen válida');
+        }
+
+        // Optimizar la imagen
+        const optimizedFile = await optimizeImage(file);
+        console.log('Archivo optimizado:', optimizedFile.name, optimizedFile.type, optimizedFile.size);
+
+        // Mostrar la imagen capturada
+        const imageUrl = URL.createObjectURL(optimizedFile);
+        capturedImage.src = imageUrl;
+        capturedImage.style.display = 'block';
+        video.style.display = 'none';
+        captureButton.style.display = 'none';
+        confirmButton.style.display = 'inline-block';
+        retakeButton.style.display = 'inline-block';
+
+        // Guardar la foto optimizada
+        capturedPhoto = optimizedFile;
+
+        // Ocultar la pantalla de carga si está visible
+        pantallaCargando.classList.add('oculta');
+        loadingOverlay.classList.remove('active');
+
+        return optimizedFile;
+    } catch (error) {
+        console.error('Error al procesar la imagen:', error);
+        alert(error.message);
+        // Asegurar que se oculte la pantalla de carga
+        pantallaCargando.classList.add('oculta');
+        loadingOverlay.classList.remove('active');
+        throw error;
+    }
+}
+
+// Event listener para el botón de confirmar
+confirmButton.addEventListener('click', async () => {
+    try {
+        if (!capturedPhoto) {
+            throw new Error('No hay foto para confirmar. Por favor, toma una foto primero.');
+        }
+
+        // Detener la cámara
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+
+        // Mostrar pantalla de carga
+        pantallaCargando.classList.remove('oculta');
+        loadingOverlay.classList.add('active');
+
+        // Procesar la foto optimizada
+        await processImage(capturedPhoto);
+    } catch (error) {
+        console.error('Error al confirmar la foto:', error);
+        alert(error.message);
+        // Asegurar que se oculte la pantalla de carga
+        pantallaCargando.classList.add('oculta');
+        loadingOverlay.classList.remove('active');
+    }
+});
+
+// Event listener para el botón de volver a tomar
+retakeButton.addEventListener('click', () => {
+    resetCameraUI();
+});
+
+// Event listener para el input de archivo
+fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        await processImage(file);
+    }
+});
+
+// Función para procesar la imagen
+async function processImage(file) {
+    try {
+        // Verificar el tipo MIME
+        if (!file.type.startsWith('image/')) {
+            throw new Error('El archivo no es una imagen válida');
+        }
+
+        // Verificar el tamaño del archivo
+        if (file.size > 300 * 1024) { // 300KB
+            throw new Error('La imagen es demasiado grande. Por favor, intenta con una imagen más pequeña.');
+        }
+
+        // Optimizar la imagen
+        const optimizedFile = await optimizeImage(file);
+        console.log('Archivo optimizado:', optimizedFile.name, optimizedFile.type, optimizedFile.size);
+
+        // Mostrar la imagen
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            preview.innerHTML = `<img src="${e.target.result}" alt="Vista previa">`;
+        };
+        reader.readAsDataURL(optimizedFile);
+
+        // Enviar a Gemini
+        await sendToGemini(optimizedFile);
+    } catch (error) {
+        console.error('Error al procesar la imagen:', error);
+        alert(error.message);
+        // Asegurar que se oculte la pantalla de carga
+        pantallaCargando.classList.add('oculta');
+        loadingOverlay.classList.remove('active');
+    }
+}
+
+// Función para enviar a Gemini
+async function sendToGemini(file) {
+    try {
+        // Mostrar pantalla de carga
+        pantallaCargando.classList.remove('oculta');
+        loadingOverlay.classList.add('active');
+
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+
+        reader.onload = async () => {
+            const base64Image = reader.result.split(',')[1];
+
+            const requestBody = {
+                contents: [{
+                    parts: [{
+                        text: "Analiza esta imagen y proporciona recomendaciones de peinados basadas en la forma del rostro. IMPORTANTE: RESPONDE TODO EN ESPAÑOL, excepto los términos de búsqueda que deben ser en inglés. Incluye:\n\n1. Un análisis detallado de la forma del rostro\n2. Tres recomendaciones de peinados específicos\n3. Explicación de por qué cada peinado sería beneficioso\n4. Sugerencias de estilos y técnicas de peinado\n\nFormato de respuesta (TODO EN ESPAÑOL excepto los términos de búsqueda):\n\nANÁLISIS DEL ROSTRO:\n[Análisis detallado en español]\n\nRECOMENDACIONES DE PEINADOS:\n\n1. [Nombre del peinado en español]\n- Descripción: [Descripción detallada en español]\n- Beneficios: [Explicación en español de por qué funciona bien]\n- Técnicas: [Sugerencias de técnicas en español]\n- Búsqueda: [Términos de búsqueda en inglés para Google Images]\n\n2. [Nombre del peinado en español]\n- Descripción: [Descripción detallada en español]\n- Beneficios: [Explicación en español de por qué funciona bien]\n- Técnicas: [Sugerencias de técnicas en español]\n- Búsqueda: [Términos de búsqueda en inglés para Google Images]\n\n3. [Nombre del peinado en español]\n- Descripción: [Descripción detallada en español]\n- Beneficios: [Explicación en español de por qué funciona bien]\n- Técnicas: [Sugerencias de técnicas en español]\n- Búsqueda: [Términos de búsqueda en inglés para Google Images]\n\nCONSEJOS ADICIONALES:\n[Lista de consejos generales en español para el cuidado y mantenimiento del cabello]"
+                    }, {
+                        inline_data: {
+                            mime_type: "image/png",
+                            data: base64Image
+                        }
+                    }]
+                }]
+            };
+
+            const response = await fetch(GEMINI_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-goog-api-key': GEMINI_API_KEY
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error en la API: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log('Respuesta de Gemini:', data);
+
+            if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+                throw new Error('La API no devolvió una respuesta válida');
+            }
+
+            const text = data.candidates[0].content.parts[0].text;
+            console.log('Texto de la respuesta:', text);
+
+            // Procesar la respuesta
+            const sections = text.split('\n\n');
+            let currentSection = '';
+            let currentContent = '';
+
+            sections.forEach(section => {
+                if (section.startsWith('ANÁLISIS DEL ROSTRO:')) {
+                    currentSection = 'análisis';
+                    currentContent = section.replace('ANÁLISIS DEL ROSTRO:', '').trim();
+                    faceType.textContent = currentContent;
+                    faceAnalysis.style.display = 'block';
+                } else if (section.startsWith('RECOMENDACIONES DE PEINADOS:')) {
+                    currentSection = 'recomendaciones';
+                } else if (section.startsWith('CONSEJOS ADICIONALES:')) {
+                    currentSection = 'consejos';
+                } else if (currentSection === 'recomendaciones' && section.match(/^\d+\./)) {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+
+                    const lines = section.split('\n');
+                    const title = lines[0].replace(/^\d+\.\s*/, '');
+                    const description = lines.find(line => line.startsWith('- Descripción:'))?.replace('- Descripción:', '').trim() || '';
+                    const beneficios = lines.find(line => line.startsWith('- Beneficios:'))?.replace('- Beneficios:', '').trim() || '';
+                    const tecnicas = lines.find(line => line.startsWith('- Técnicas:'))?.replace('- Técnicas:', '').trim() || '';
+                    const busqueda = lines.find(line => line.startsWith('- Búsqueda:'))?.replace('- Búsqueda:', '').trim() || title;
+
+                    card.innerHTML = `
+                        <h3>✂️ ${title}</h3>
+                        <p>${description}</p>
+                        <p><strong>Beneficios:</strong> ${beneficios}</p>
+                        <p><strong>Técnicas:</strong> ${tecnicas}</p>
+                        <iframe class="preview-frame" 
+                                src="https://www.google.com/search?igu=1&q=${encodeURIComponent(busqueda)}&tbm=isch"
+                                loading="lazy">
+                        </iframe>
+                        <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(busqueda)}" 
+                           target="_blank" 
+                           rel="noopener noreferrer">
+                            Ver más ejemplos
+                        </a>
+                    `;
+
+                    cards.appendChild(card);
+                }
+            });
+
+            // Ocultar pantallas de carga
+            pantallaCargando.classList.add('oculta');
+            loadingOverlay.classList.remove('active');
+        };
+    } catch (error) {
+        console.error('Error al enviar a Gemini:', error);
+        alert(`Error al analizar la imagen: ${error.message}`);
+        // Asegurar que se oculte la pantalla de carga
+        pantallaCargando.classList.add('oculta');
+        loadingOverlay.classList.remove('active');
+    }
+}
+
+function mostrarPantallaCargando() {
+    document.getElementById('pantallaCargando').classList.remove('oculta');
+}
+
+function ocultarPantallaCargando() {
+    document.getElementById('pantallaCargando').classList.add('oculta');
+}
