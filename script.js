@@ -1,331 +1,325 @@
-class FaceDetectionApp {
-    constructor() {
-        // Elementos del DOM
-        this.video = document.getElementById('video');
-        this.canvas = document.getElementById('canvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.toggleBtn = document.getElementById('toggleCamera');
-        this.statusText = document.getElementById('status');
-        this.fpsCounter = document.getElementById('fpsCounter');
-        this.showPointsCheckbox = document.getElementById('showPoints');
-        this.showContourCheckbox = document.getElementById('showContour');
-        this.sensitivitySlider = document.getElementById('sensitivity');
+// Reemplaza esto con tu API key de Google Gemini
+const GEMINI_API_KEY = 'AIzaSyCwFKPO-Zec8uIG2Sl5zAAr9SMPoOdtyMc';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
-        // Variables de estado
-        this.stream = null;
-        this.faceMesh = null;
-        this.animationFrameId = null;
-        this.lastTimestamp = 0;
-        this.frameCount = 0;
-        this.currentFPS = 0;
-        this.lastShapeDetection = 0; 
-        this.detectionConfig = {
-            showPoints: true,
-            showContour: true,
-            sensitivity: 0.5
-        };
+// Elementos del DOM
+const fileOption = document.getElementById('fileOption');
+const cameraOption = document.getElementById('cameraOption');
+const fileInputContainer = document.getElementById('fileInputContainer');
+const cameraContainer = document.getElementById('cameraContainer');
+const video = document.getElementById('video');
+const captureButton = document.getElementById('captureButton');
+const confirmButton = document.getElementById('confirmButton');
+const retakeButton = document.getElementById('retakeButton');
+const capturedImage = document.getElementById('capturedImage');
+const fileInput = document.getElementById('fileInput');
+const preview = document.getElementById('preview');
+const loading = document.getElementById('loading');
+const faceAnalysis = document.getElementById('faceAnalysis');
+const cards = document.getElementById('cards');
 
-        // Diccionario de peinados (nuevo)
-        this.HAIRSTYLES_BY_FACE = {
-            ovalada: [
-                "Corte largo con capas", 
-                "Flequillo recto", 
-                "Corte bob"
-            ],
-            redonda: [
-                "Peinados altos para alargar", 
-                "Capas asimétricas", 
-                "Flequillo lateral"
-            ],
-            cuadrada: [
-                "Ondas suaves", 
-                "Corte pixie", 
-                "Rulos para suavizar"
-            ],
-            alargada: [
-                "Corte corto con volumen", 
-                "Flequillo grueso", 
-                "Ondas horizontales"
-            ],
-            corazón: [
-                "Cascada de rizos", 
-                "Media melena", 
-                "Flequillo en pico"
-            ]
-        };
+let stream = null;
+let capturedPhoto = null;
 
-        this.init();
-    }
-
-    async init() {
-        try {
-            this.setupEventListeners();
-            await this.loadMediaPipe();
-            this.updateDetectionConfig();
-            this.statusText.textContent = "Sistema listo";
-            this.statusText.style.color = "#2ecc71";
-        } catch (error) {
-            this.handleError("Error al inicializar:", error);
-        }
-    }
-
-    setupEventListeners() {
-        this.toggleBtn.addEventListener('click', () => this.toggleCamera());
-        this.showPointsCheckbox.addEventListener('change', () => this.updateDetectionConfig());
-        this.showContourCheckbox.addEventListener('change', () => this.updateDetectionConfig());
-        this.sensitivitySlider.addEventListener('input', () => this.updateDetectionConfig());
-    }
-
-    updateDetectionConfig() {
-      
-  
-        this.detectionConfig = {
-            showPoints: this.showPointsCheckbox.checked,
-            showContour: this.showContourCheckbox.checked,
-            sensitivity: parseFloat(this.sensitivitySlider.value)
-        };
-
-        if (this.faceMesh) {
-            this.faceMesh.setOptions({
-                minDetectionConfidence: this.detectionConfig.sensitivity,
-                minTrackingConfidence: this.detectionConfig.sensitivity
-            });
-        }
-    }
-
-    async loadMediaPipe() {
-    
-        try {
-            this.faceMesh = new FaceMesh({
-                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
-            });
-
-
-            await this.faceMesh.setOptions({
-                maxNumFaces: 1,
-                refineLandmarks: true,
-                minDetectionConfidence: 0.5,
-                minTrackingConfidence: 0.5
-            });
-
-            this.faceMesh.onResults((results) => this.processResults(results));
-        } catch (error) {
-            throw new Error(`Error al cargar MediaPipe: ${error.message}`);
-        }
-    }
-
-    async toggleCamera() {
-        try {
-            if (!this.stream) {
-                await this.startCamera();
-            } else {
-                this.stopCamera();
-            }
-        } catch (error) {
-            this.handleError("Error al alternar cámara:", error);
-        }
-    }
-
-    async startCamera() {
-      
-        try {
-            this.stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    width: { ideal: 640 },
-                    height: { ideal: 480 },
-                    facingMode: "user",
-                    frameRate: { ideal: 30 }
-                }
-            });
-
-            this.video.srcObject = this.stream;
-            
-            this.video.onloadedmetadata = () => {
-                this.canvas.width = this.video.videoWidth;
-                this.canvas.height = this.video.videoHeight;
-                this.statusText.textContent = "Cámara activa";
-                this.statusText.style.color = "#2ecc71";
-                this.toggleBtn.textContent = "Detener Cámara";
-                this.lastTimestamp = performance.now();
-                this.processVideoFrame();
-            };
-
-        } catch (error) {
-            if (error.name === 'NotAllowedError') {
-                this.handleError("Permiso de cámara denegado. Por favor habilita los permisos.");
-            } else {
-                this.handleError("Error al acceder a la cámara:", error);
-            }
-        }
-    }
-
-    processVideoFrame() {
-          console.log("RESULTADO");
-        if (!this.stream) return;
-
-        const now = performance.now();
-        this.frameCount++;
-        
-        if (now - this.lastTimestamp >= 1000) {
-            this.currentFPS = Math.round((this.frameCount * 1000) / (now - this.lastTimestamp));
-            this.fpsCounter.textContent = `FPS: ${this.currentFPS}`;
-            this.lastTimestamp = now;
-            this.frameCount = 0;
-        }
-
-        if (this.faceMesh && this.video.readyState >= 2) {
-            this.faceMesh.send({ image: this.video });
-        }
-
-        this.animationFrameId = requestAnimationFrame(() => this.processVideoFrame());
-    }
-
-   
-    processResults(results) {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
-
-        if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
-            const landmarks = results.multiFaceLandmarks[0];
-            
-            // 1. Determinar tipo de rostro (nuevo)
-            const faceShape = this.determineFaceShape(landmarks);
-            
-            // 2. Mostrar sugerencias (cada 5 segundos)
-            if (!this.lastShapeDetection || Date.now() - this.lastShapeDetection > 5000) {
-                this.showHairstyleSuggestions(faceShape);
-                this.lastShapeDetection = Date.now();
-            }
-
-            // 3. Dibujar landmarks (original)
-            if (this.detectionConfig.showPoints) this.drawLandmarks(landmarks);
-            if (this.detectionConfig.showContour) this.drawFaceContour(landmarks);
-        }
-    }
-
-    // ===== FUNCIONES NUEVAS =====
-    determineFaceShape(landmarks) {
-        // Puntos clave para cálculos (índices de landmarks)
-        const jawline = [152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234];
-        const forehead = [10];
-        const cheekbones = [454, 234];
-
-        // Calcular distancias
-        const jawWidth = Math.abs(landmarks[jawline[0]].x - landmarks[jawline[10]].x);
-        const faceHeight = Math.abs(landmarks[forehead[0]].y - landmarks[jawline[5]].y);
-        const cheekboneWidth = Math.abs(landmarks[cheekbones[0]].x - landmarks[cheekbones[1]].x);
-
-        // Ratios clave
-        const ratioWidthHeight = jawWidth / faceHeight;
-        const ratioCheekJaw = cheekboneWidth / jawWidth;
-
-        // Clasificación (valores ajustables)
-        if (ratioWidthHeight > 0.75 && ratioCheekJaw > 0.9) {
-            return "redonda";
-        } else if (ratioWidthHeight < 0.7 && ratioCheekJaw > 0.85) {
-            return "ovalada";
-        } else if (ratioWidthHeight > 0.8 && ratioCheekJaw < 0.85) {
-            return "cuadrada";
-        } else if (ratioWidthHeight < 0.65) {
-            return "alargada";
-        } else {
-            return "corazón";
-        }
-    }
-
-    showHairstyleSuggestions(faceShape) {
-        const suggestions = this.HAIRSTYLES_BY_FACE[faceShape] || [];
-        const suggestionsHTML = suggestions.map(s => `<li>${s}</li>`).join('');
-        
-        let container = document.getElementById('hairstyle-suggestions');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'hairstyle-suggestions';
-            container.style.cssText = `
-                margin-top: 20px;
-                padding: 15px;
-                background: #f8f9fa;
-                border-radius: 8px;
-            `;
-            container.innerHTML = `
-                <h3 style="color: #2c3e50; margin-top: 0;">Para rostro ${faceShape}:</h3>
-                <ul style="padding-left: 20px; margin-bottom: 0;">${suggestionsHTML}</ul>
-            `;
-            document.querySelector('.container').appendChild(container);
-        } else {
-            container.innerHTML = `
-                <h3 style="color: #2c3e50; margin-top: 0;">Para rostro ${faceShape}:</h3>
-                <ul style="padding-left: 20px; margin-bottom: 0;">${suggestionsHTML}</ul>
-            `;
-        }
-    }
-    drawLandmarks(landmarks) {
-        this.ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
-        for (const point of landmarks) {
-            this.ctx.beginPath();
-            this.ctx.arc(
-                point.x * this.canvas.width,
-                point.y * this.canvas.height,
-                2, 0, 2 * Math.PI
-            );
-            this.ctx.fill();
-        }
-    }
-
-    drawFaceContour(landmarks) {
-        this.ctx.strokeStyle = 'rgba(0, 255, 0, 0.7)';
-        this.ctx.lineWidth = 2;
-        this.ctx.beginPath();
-        
-        const faceOvalIndices = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288];
-        for (let i = 0; i < faceOvalIndices.length; i++) {
-            const index = faceOvalIndices[i];
-            const point = landmarks[index];
-            
-            if (i === 0) {
-                this.ctx.moveTo(
-                    point.x * this.canvas.width,
-                    point.y * this.canvas.height
-                );
-            } else {
-                this.ctx.lineTo(
-                    point.x * this.canvas.width,
-                    point.y * this.canvas.height
-                );
-            }
-        }
-        
-        this.ctx.closePath();
-        this.ctx.stroke();
-    }
-
-    stopCamera() {
-        if (this.stream) {
-            this.stream.getTracks().forEach(track => track.stop());
-            this.video.srcObject = null;
-            this.stream = null;
-            
-            if (this.animationFrameId) {
-                cancelAnimationFrame(this.animationFrameId);
-                this.animationFrameId = null;
-            }
-            
-            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            this.statusText.textContent = "Cámara detenida";
-            this.statusText.style.color = "#7f8c8d";
-            this.toggleBtn.textContent = "Iniciar Cámara";
-            this.fpsCounter.textContent = "FPS: 0";
-        }
-    }
-
-    handleError(message, error = null) {
-        console.error(message, error);
-        this.statusText.textContent = typeof error === 'string' ? error : 
-            error?.message || "Ocurrió un error";
-        this.statusText.style.color = "#e74c3c";
+// Función para cambiar entre opciones
+function switchInput(type) {
+    if (type === 'file') {
+        fileOption.classList.add('active');
+        cameraOption.classList.remove('active');
+        fileInputContainer.classList.add('active');
+        cameraContainer.classList.remove('active');
+        stopCamera();
+        resetCameraUI();
+    } else {
+        fileOption.classList.remove('active');
+        cameraOption.classList.add('active');
+        fileInputContainer.classList.remove('active');
+        cameraContainer.classList.add('active');
+        startCamera();
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    new FaceDetectionApp();
+function resetCameraUI() {
+    captureButton.style.display = 'block';
+    confirmButton.style.display = 'none';
+    retakeButton.style.display = 'none';
+    capturedImage.style.display = 'none';
+    video.style.display = 'block';
+    capturedPhoto = null;
+}
+
+// Función para iniciar la cámara
+async function startCamera() {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: 'user',
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            }
+        });
+        video.srcObject = stream;
+    } catch (err) {
+        console.error('Error al acceder a la cámara:', err);
+        alert('No se pudo acceder a la cámara. Por favor, asegúrate de dar los permisos necesarios.');
+    }
+}
+
+// Función para detener la cámara
+function stopCamera() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+        stream = null;
+    }
+}
+
+// Event listeners para los botones de opción
+fileOption.addEventListener('click', () => switchInput('file'));
+cameraOption.addEventListener('click', () => switchInput('camera'));
+
+// Event listener para el botón de captura
+captureButton.addEventListener('click', () => {
+    if (!video.videoWidth || !video.videoHeight) {
+        alert('La cámara no está lista. Espera unos segundos y vuelve a intentar.');
+        return;
+    }
+
+    // Crear canvas con dimensiones más pequeñas
+    const canvas = document.createElement('canvas');
+    // Reducir dimensiones a 480x360 para optimizar tamaño
+    canvas.width = 480;
+    canvas.height = 360;
+    const ctx = canvas.getContext('2d');
+
+    // Dibujar el frame actual del video con las nuevas dimensiones
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Convertir a blob en formato PNG con compresión
+    canvas.toBlob((blob) => {
+        if (!blob || blob.size < 10000) {
+            alert('La foto capturada no es válida. Intenta tomar la foto de nuevo, asegurándote de que la cámara esté enfocada.');
+            resetCameraUI();
+            return;
+        }
+
+        // Verificar el tamaño del blob
+        console.log('Tamaño del blob antes de procesar:', blob.size);
+
+        // Si el blob es muy grande, intentar reducir más la calidad
+        if (blob.size > 200000) {
+            canvas.toBlob((compressedBlob) => {
+                if (compressedBlob) {
+                    const file = new File([compressedBlob], 'foto_capturada.png', {
+                        type: 'image/png',
+                        lastModified: new Date().getTime()
+                    });
+                    processCapturedImage(file);
+                }
+            }, 'image/png', 0.7); // Reducir calidad a 70%
+        } else {
+            const file = new File([blob], 'foto_capturada.png', {
+                type: 'image/png',
+                lastModified: new Date().getTime()
+            });
+            processCapturedImage(file);
+        }
+    }, 'image/png', 0.8); // Reducir calidad inicial a 80%
 });
+
+// Función para procesar la imagen capturada
+function processCapturedImage(file) {
+    // Guardar la foto capturada
+    capturedPhoto = file;
+
+    // Mostrar la imagen capturada
+    capturedImage.src = URL.createObjectURL(file);
+    capturedImage.style.display = 'block';
+    video.style.display = 'none';
+
+    // Actualizar UI
+    captureButton.style.display = 'none';
+    confirmButton.style.display = 'block';
+    retakeButton.style.display = 'block';
+
+    console.log('Foto capturada:', file, 'Tipo:', file.type, 'Tamaño:', file.size);
+}
+
+// Event listener para el botón de confirmar
+confirmButton.addEventListener('click', async () => {
+    if (!capturedPhoto) {
+        alert('No hay foto para confirmar. Por favor, toma una foto primero.');
+        return;
+    }
+
+    try {
+        // Verificar el tamaño del archivo
+        if (capturedPhoto.size > 300000) {
+            alert('La imagen es demasiado grande. Por favor, intenta tomar la foto de nuevo.');
+            resetCameraUI();
+            return;
+        }
+
+        stopCamera();
+        // Ocultar la imagen de la cámara y los botones
+        capturedImage.style.display = 'none';
+        confirmButton.style.display = 'none';
+        retakeButton.style.display = 'none';
+
+        // Mostrar loading antes de procesar
+        mostrarPantallaCargando();
+
+        // Verificar el archivo antes de procesar
+        console.log('Procesando foto:', capturedPhoto, 'Tipo:', capturedPhoto.type, 'Tamaño:', capturedPhoto.size);
+
+        if (capturedPhoto.size < 10000) {
+            throw new Error('La imagen capturada es demasiado pequeña o inválida');
+        }
+
+        await processImage(capturedPhoto);
+    } catch (error) {
+        console.error('Error al confirmar foto:', error);
+        alert('Hubo un error al procesar la foto. Por favor, intenta de nuevo.');
+        ocultarPantallaCargando();
+        resetCameraUI();
+    }
+});
+
+// Event listener para el botón de volver a tomar
+retakeButton.addEventListener('click', () => {
+    resetCameraUI();
+});
+
+// Event listener para el input de archivo
+fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        await processImage(file);
+    }
+});
+
+async function processImage(file) {
+    // Mostrar la imagen
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file);
+    preview.innerHTML = '';
+    preview.appendChild(img);
+
+    // Log para debug
+    console.log('Archivo a procesar:', file, 'Tipo:', file.type, 'Tamaño:', file.size);
+
+    // Mostrar loading
+    loading.classList.add('active');
+    document.getElementById('loadingOverlay').style.display = 'flex';
+    mostrarPantallaCargando();
+    faceAnalysis.style.display = 'none';
+    cards.innerHTML = '';
+
+    try {
+        // Convertir la imagen a base64
+        const reader = new FileReader();
+        reader.onload = async function (e) {
+            const base64Image = e.target.result.split(',')[1];
+            // Detectar el tipo MIME real del archivo
+            const mimeType = file.type || 'image/png';
+            // Pasar el tipo MIME a analyzeImage
+            const analysis = await analyzeImage(base64Image, mimeType);
+
+            // Mostrar el tipo de rostro
+            document.getElementById('faceType').textContent = analysis.faceType;
+            faceAnalysis.style.display = 'block';
+
+            // Mostrar las recomendaciones
+            analysis.recommendations.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.innerHTML = `
+                    <h3>✂️ ${p.name}</h3>
+                    <p>${p.description}</p>
+                    <iframe class="preview-frame" 
+                            src="https://www.google.com/search?igu=1&q=${encodeURIComponent(p.query)}&tbm=isch"
+                            loading="lazy">
+                    </iframe>
+                    <a href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(p.query)}" 
+                       target="_blank" 
+                       rel="noopener noreferrer">
+                        Ver más ejemplos
+                    </a>
+                `;
+                cards.appendChild(div);
+            });
+            // Ocultar loading SOLO después de mostrar las tarjetas
+            loading.classList.remove('active');
+            document.getElementById('loadingOverlay').style.display = 'none';
+            ocultarPantallaCargando();
+        };
+        reader.readAsDataURL(file);
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Hubo un error al analizar la imagen. Por favor, intenta de nuevo.');
+        loading.classList.remove('active');
+        document.getElementById('loadingOverlay').style.display = 'none';
+        ocultarPantallaCargando();
+    }
+}
+
+async function analyzeImage(imageData, mimeType) {
+    try {
+        // Verificar que el tipo MIME sea PNG
+        if (mimeType !== 'image/png') {
+            throw new Error('La imagen debe estar en formato PNG');
+        }
+
+        const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: "Analiza esta imagen de un rostro humano y recomienda 3 peinados que se adapten bien a la forma de la cara. Para cada peinado, proporciona: 1) Nombre del peinado, 2) Breve descripción, 3) Tipo de rostro al que mejor se adapta, 4) Una query de búsqueda en inglés para Google Images. RESPONDE SOLO EN ESPAÑOL y SOLO con el JSON, sin markdown ni backticks, con esta estructura: {faceType: 'tipo de rostro', recommendations: [{name: 'nombre', description: 'descripción', query: 'términos de búsqueda en inglés'}]}"
+                    }, {
+                        inline_data: {
+                            mime_type: 'image/png',
+                            data: imageData
+                        }
+                    }]
+                }]
+            })
+        });
+
+        if (!response.ok) {
+            if (response.status === 503) {
+                throw new Error('El servicio de Gemini está temporalmente no disponible. Por favor, intenta de nuevo en unos minutos.');
+            }
+            throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0] || !data.candidates[0].content.parts[0].text) {
+            throw new Error('La API no devolvió una respuesta válida. Puede que la imagen no sea adecuada o haya un problema de conexión.');
+        }
+        const responseText = data.candidates[0].content.parts[0].text;
+
+        // Limpiar la respuesta de posibles backticks y markdown
+        const cleanJson = responseText
+            .replace(/```json\n?/g, '')
+            .replace(/```\n?/g, '')
+            .trim();
+
+        return JSON.parse(cleanJson);
+    } catch (error) {
+        console.error('Error al analizar la imagen:', error);
+        alert('No se pudo analizar la imagen. ' + error.message);
+        throw error;
+    }
+}
+
+function mostrarPantallaCargando() {
+    document.getElementById('pantallaCargando').classList.remove('oculta');
+}
+
+function ocultarPantallaCargando() {
+    document.getElementById('pantallaCargando').classList.add('oculta');
+}
