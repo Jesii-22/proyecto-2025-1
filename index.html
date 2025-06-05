@@ -1,52 +1,62 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detección Facial Avanzada</title>
+    <title>Asistente de Peinados IA</title>
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
-    <div class="container">
-        <h1>Detección Facial</h1>
-        
-        <div class="controls-panel">
-            <button id="toggleCamera">Iniciar Cámara</button>
-            <div class="settings">
-                <label>
-                    <input type="checkbox" id="showPoints" checked> Mostrar puntos
-                </label>
-                <label>
-                    <input type="checkbox" id="showContour" checked> Mostrar contorno
-                </label>
-                <label>
-                    Sensibilidad: <input type="range" id="sensitivity" min="0.1" max="1.0" step="0.1" value="0.5">
-                </label>
+    <h1>Asistente de Peinados IA</h1>
+
+    <div class="upload-section">
+        <div class="input-options">
+            <button class="input-option active" id="fileOption">Subir archivo</button>
+            <button class="input-option" id="cameraOption">Usar cámara</button>
+        </div>
+
+        <div class="file-input-container active" id="fileInputContainer">
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <div class="camera-container" id="cameraContainer">
+            <video id="video" autoplay playsinline></video>
+            <img id="capturedImage" alt="Foto capturada">
+            <div class="camera-buttons">
+                <button id="captureButton" class="camera-button">Tomar foto</button>
+                <button id="confirmButton" class="camera-button">Confirmar</button>
+                <button id="retakeButton" class="camera-button">Volver a tomar</button>
             </div>
         </div>
 
-        <div class="camera-box">
-            <video id="video" autoplay muted playsinline></video>
-            <canvas id="canvas"></canvas>
-        </div>
-
-        <div class="status-container">
-            <p id="status">Estado: Esperando inicio...</p>
-            <div id="fpsCounter">FPS: 0</div>
-        </div>
+        <div class="preview" id="preview"></div>
     </div>
 
-    <!-- Carga de MediaPipe desde CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/holistic/holistic.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>  
+    <div class="loading" id="loading">
+        <p>Analizando tu rostro y buscando los mejores peinados para ti... 🔍</p>
+    </div>
 
-    
+    <div class="face-analysis" id="faceAnalysis">
+        <h3>Análisis de tu rostro:</h3>
+        <p id="faceType"></p>
+    </div>
 
-    
+    <div class="cards" id="cards"></div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div>Procesando imagen y generando recomendaciones...</div>
+    </div>
+
+    <div class="pantalla-cargando oculta" id="pantallaCargando">
+        <div class="spinner-grande"></div>
+        <div class="mensaje-cargando">Cargando...</div>
+        <div class="submensaje">Estamos analizando tu imagen y generando recomendaciones personalizadas.</div>
+    </div>
+
     <script src="script.js"></script>
 </body>
+
 </html>
