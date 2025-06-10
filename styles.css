@@ -1,31 +1,168 @@
+:root {
+    --primary-color: #9B24E1; /* Púrpura vibrante */
+    --secondary-color: #E01BA0; /* Rosa magenta */
+    --accent-color: #17E376; /* Verde lima brillante */
+    --light-background: #33E01B; /* Verde claro vibrante - Usado como base del gradiente en algunos loaders */
+    --card-background: white; /* Fondo de tarjetas y elementos principales */
+    --text-color: #8B3F72; /* Color de texto principal (un púrpura más oscuro) */
+    --light-text-color: #533C61; /* Color de texto secundario/ligero (un púrpura grisáceo) */
+    --border-radius-sm: 6px;
+    --border-radius-md: 12px;
+    --border-radius-lg: 18px;
+    --box-shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.1);
+    --box-shadow-md: 0 6px 32px rgba(0, 0, 0, 0.12);
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #f5f5f5;
-    padding: 2rem;
+    background: #c5ffbd; /* Fondo de la página, un verde muy claro */
+    /* Eliminamos el padding top del body para controlarlo mejor en el main-content */
+    padding: 0 2rem 2rem 2rem; /* padding-top en 0, manteniendo los demás */
     max-width: 1200px;
     margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Aseguramos que el body ocupe al menos la altura de la ventana */
+    min-height: 100vh;
 }
 
 h1 {
     text-align: center;
-    color: #333;
+    color: var(--text-color);
     margin-bottom: 2rem;
     font-size: 2.5rem;
+}
+
+/* --- Estilos para la pantalla de bienvenida --- */
+.welcome-screen {
+    background: var(--card-background);
+    padding: 3rem;
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--box-shadow-md);
+    text-align: center;
+    max-width: 500px;
+    width: 90%;
+    margin: 4rem auto; /* Centrar verticalmente también */
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: center;
+    /* Animación de entrada: aparece suavemente */
+    animation: fadeInScale 0.6s ease-out forwards;
+}
+
+.welcome-screen h1 {
+    font-size: 2.8rem;
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+}
+
+.welcome-screen p {
+    font-size: 1.3rem;
+    color: var(--light-text-color);
+    margin-bottom: 2rem;
+}
+
+.welcome-screen .input-group {
+    width: 100%;
+    text-align: left;
+}
+
+.welcome-screen label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: var(--text-color);
+    font-size: 1.1rem;
+}
+
+.welcome-screen input[type="text"],
+.welcome-screen input[type="number"] {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--light-text-color);
+    border-radius: var(--border-radius-sm);
+    font-size: 1rem;
+    /* Transición suave para el foco */
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    color: var(--text-color);
+}
+
+.welcome-screen input[type="text"]:focus,
+.welcome-screen input[type="number"]:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(155, 36, 225, 0.2);
+}
+
+.welcome-screen button {
+    padding: 1.2rem 2.5rem;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    font-size: 1.5rem;
+    font-weight: 600;
+    /* Transición suave para el hover y el click */
+    transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+    margin-top: 1.5rem;
+}
+
+.welcome-screen button:hover {
+    background: var(--secondary-color);
+    transform: translateY(-5px) scale(1.02); /* Efecto de "levantar" y crecer */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.welcome-screen button:active {
+    transform: translateY(-2px) scale(0.98); /* Efecto de "presionar" */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Clase para ocultar elementos - con animación de salida */
+.hidden {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+    pointer-events: none; /* Evita que se pueda interactuar mientras se desvanece */
+    animation: fadeOutTranslate 0.4s ease-in forwards;
+    /* Posicionamiento absoluto para sacarlo del flujo y no afecte el espacio */
+    position: absolute; /* Oculta el elemento sin afectar el flujo del diseño */
+    top: -9999px; /* Mueve el elemento fuera del viewport para que no ocupe espacio */
+    left: -9999px;
+    width: 1px; /* Reduce su tamaño al mínimo */
+    height: 1px;
+    overflow: hidden; /* Oculta cualquier contenido desbordado */
+}
+
+
+.main-content:not(.hidden) {
+    animation: fadeInTranslate 0.6s ease-out 0.2s forwards;
+    /* Agregamos un padding-top aquí en lugar de en el body para el espacio inicial */
+    padding-top: 2rem; /* Esto crea el espacio superior para el contenido */
+    width: 100%; /* Asegurar que ocupe todo el ancho disponible */
+    box-sizing: border-box; /* Asegurar que el padding no desborde el ancho */
 }
 
 .upload-section {
     text-align: center;
     margin-bottom: 2rem;
     padding: 2rem;
-    background: white;
+    background: var(--card-background);
     border-radius: 12px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
 }
 
 .input-options {
@@ -37,25 +174,30 @@ h1 {
 
 .input-option {
     padding: 0.8rem 1.5rem;
-    background: #3498db;
-    color: white;
+    background: var(--primary-color);
+    color: var(--card-background);
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    transition: background 0.3s ease;
+    /* Transición para el cambio de color y sombra */
+    transition: background 0.3s ease, box-shadow 0.2s ease;
 }
 
 .input-option:hover {
-    background: #2980b9;
+    background: var(--primary-color);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15); /* Sombra sutil al pasar el ratón */
 }
 
 .input-option.active {
-    background: #2c3e50;
+    background: var(--secondary-color);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15); /* Sombra también para el activo */
 }
 
 .file-input-container {
     margin: 1rem 0;
     display: none;
+    /* Animación de aparición/desaparición */
+    animation: slideInFromTop 0.4s ease-out;
 }
 
 .file-input-container.active {
@@ -65,6 +207,8 @@ h1 {
 .camera-container {
     margin: 1rem 0;
     display: none;
+    /* Animación de aparición/desaparición */
+    animation: slideInFromTop 0.4s ease-out;
 }
 
 .camera-container.active {
@@ -76,6 +220,9 @@ h1 {
     max-width: 400px;
     border-radius: 8px;
     margin-bottom: 1rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    /* Animación de entrada para el video */
+    animation: fadeIn 0.5s ease-out;
 }
 
 .camera-buttons {
@@ -87,37 +234,48 @@ h1 {
 
 .camera-button {
     padding: 0.8rem 1.5rem;
-    color: white;
+    color: var(--card-background);
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    transition: background 0.3s ease;
+    /* Transiciones para los botones de cámara */
+    transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.camera-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.camera-button:active {
+    transform: translateY(0);
+    box-shadow: none;
 }
 
 #captureButton {
-    background: #e74c3c;
+    background: var(--accent-color);
 }
 
 #captureButton:hover {
-    background: #c0392b;
+    background: #16c165;
 }
 
 #confirmButton {
-    background: #27ae60;
+    background: var(--secondary-color);
     display: none;
 }
 
 #confirmButton:hover {
-    background: #219a52;
+    background: #c7178a;
 }
 
 #retakeButton {
-    background: #95a5a6;
+    background: var(--light-text-color);
     display: none;
 }
 
 #retakeButton:hover {
-    background: #7f8c8d;
+    background: #3e314a;
 }
 
 #capturedImage {
@@ -125,19 +283,32 @@ h1 {
     max-width: 400px;
     border-radius: 8px;
     margin-bottom: 1rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    /* Animación de entrada para la imagen capturada */
+    animation: fadeIn 0.5s ease-out;
 }
 
 input[type="file"] {
     padding: 1rem;
-    border: 2px dashed #ccc;
+    border: 2px dashed var(--light-text-color);
     border-radius: 8px;
     width: 100%;
     max-width: 400px;
     cursor: pointer;
+    color: var(--text-color);
+    /* Transición suave para el hover */
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+input[type="file"]:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(155, 36, 225, 0.1);
 }
 
 .preview {
     margin-top: 1rem;
+    /* Animación de entrada para la vista previa */
+    animation: fadeIn 0.5s ease-out;
 }
 
 .preview img {
@@ -150,6 +321,9 @@ input[type="file"] {
     text-align: center;
     margin: 2rem 0;
     display: none;
+    color: var(--text-color);
+    /* Animación de pulsación para el texto de carga */
+    animation: pulse 1.5s infinite ease-in-out;
 }
 
 .loading.active {
@@ -157,17 +331,26 @@ input[type="file"] {
 }
 
 .face-analysis {
-    background: white;
+    background: var(--card-background);
     padding: 1.5rem;
-    border-radius: 12px;
+    border-radius: var(--border-radius-md);
     margin: 1rem 0;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--box-shadow-sm);
     display: none;
+    color: var(--light-text-color);
+    /* Animación de entrada para el análisis facial */
+    animation: fadeInSlideUp 0.6s ease-out forwards;
 }
 
 .face-analysis.active {
     display: block;
 }
+
+.face-analysis h3 {
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+}
+
 
 .cards {
     display: flex;
@@ -180,24 +363,36 @@ input[type="file"] {
 }
 
 .card {
-    background: white;
+    background: var(--card-background);
     padding: 2.5rem 3rem;
-    border-radius: 18px;
-    box-shadow: 0 6px 32px rgba(0, 0, 0, 0.12);
-    transition: transform 0.3s ease;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--box-shadow-md);
+    /* Transición suave para el hover y animación de entrada escalonada */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
     display: flex;
     flex-direction: column;
     width: 100%;
     max-width: 98vw;
     min-height: 700px;
+    /* Animación de entrada individual para cada tarjeta */
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInSlideUp 0.6s ease-out forwards;
 }
+
+/* Retraso para la animación de las tarjetas (manejarlo en JS) */
+.card:nth-child(1) { animation-delay: 0.1s; }
+.card:nth-child(2) { animation-delay: 0.2s; }
+.card:nth-child(3) { animation-delay: 0.3s; }
+
 
 .card:hover {
     transform: translateY(-8px) scale(1.01);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); /* Sombra más pronunciada en hover */
 }
 
 .card h3 {
-    color: #2c3e50;
+    color: var(--secondary-color);
     margin-bottom: 2rem;
     font-size: 2.1rem;
     font-weight: 700;
@@ -207,7 +402,7 @@ input[type="file"] {
 }
 
 .card p {
-    color: #444;
+    color: var(--light-text-color);
     margin-bottom: 2.5rem;
     line-height: 1.7;
     font-size: 1.25rem;
@@ -217,7 +412,7 @@ input[type="file"] {
     width: 100%;
     height: 380px;
     border: none;
-    border-radius: 12px;
+    border-radius: var(--border-radius-md);
     margin-bottom: 2rem;
     flex-grow: 1;
     background: #f4f4f4;
@@ -226,11 +421,12 @@ input[type="file"] {
 .card a {
     display: inline-block;
     padding: 1.2rem 2.2rem;
-    background: #3498db;
+    background: var(--primary-color);
     color: white;
     text-decoration: none;
-    border-radius: 10px;
-    transition: background 0.3s ease;
+    border-radius: var(--border-radius-md);
+    /* Transición para el hover del enlace */
+    transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
     font-size: 1.2rem;
     text-align: center;
     width: 100%;
@@ -239,32 +435,39 @@ input[type="file"] {
 }
 
 .card a:hover {
-    background: #2980b9;
+    background: var(--secondary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
+/* --- Pantallas de carga y spinners --- */
 .loading-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.95); /* Más opaco para que se vea mejor el spinner */
     z-index: 9999;
     display: none;
     align-items: center;
     justify-content: center;
     flex-direction: column;
     font-size: 1.5rem;
-    color: #3498db;
+    color: var(--primary-color);
+    /* Animación de entrada/salida para el overlay */
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 .loading-overlay.active {
     display: flex;
+    opacity: 1;
 }
 
 .spinner {
     border: 6px solid #f3f3f3;
-    border-top: 6px solid #3498db;
+    border-top: 6px solid var(--primary-color);
     border-radius: 50%;
     width: 60px;
     height: 60px;
@@ -276,7 +479,6 @@ input[type="file"] {
     0% {
         transform: rotate(0deg);
     }
-
     100% {
         transform: rotate(360deg);
     }
@@ -288,13 +490,15 @@ input[type="file"] {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: linear-gradient(135deg, #e0e7ef 0%, #f4f8fb 100%);
+    background: linear-gradient(135deg, var(--light-background) 0%, #b7e8ad 100%);
     z-index: 20000;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    transition: opacity 0.3s;
+    /* Transición para la opacidad */
+    transition: opacity 0.3s ease;
+    opacity: 1; /* Por defecto visible al cargar si no está oculta */
 }
 
 .pantalla-cargando.oculta {
@@ -304,7 +508,7 @@ input[type="file"] {
 
 .pantalla-cargando .spinner-grande {
     border: 10px solid #e3e3e3;
-    border-top: 10px solid #3498db;
+    border-top: 10px solid var(--primary-color);
     border-radius: 50%;
     width: 90px;
     height: 90px;
@@ -314,32 +518,205 @@ input[type="file"] {
 
 .pantalla-cargando .mensaje-cargando {
     font-size: 2rem;
-    color: #2c3e50;
+    color: var(--secondary-color);
     font-weight: 600;
     margin-bottom: 0.5rem;
 }
 
 .pantalla-cargando .submensaje {
     font-size: 1.1rem;
-    color: #555;
+    color: var(--light-text-color);
 }
 
+/* Estilo para los consejos adicionales */
+.additional-tips {
+    background: var(--card-background);
+    padding: 1.5rem;
+    border-radius: var(--border-radius-md);
+    margin: 1rem 0 3rem;
+    box-shadow: var(--box-shadow-sm);
+    display: none;
+    width: 100%;
+    color: var(--text-color);
+    /* Animación de entrada para los consejos */
+    animation: fadeInSlideUp 0.6s ease-out forwards;
+}
+
+.additional-tips h3 {
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+    font-size: 1.8rem;
+    text-align: center;
+}
+
+.additional-tips ul {
+    list-style: none;
+    padding: 0;
+}
+
+.additional-tips ul li {
+    background-color: #f0e6fa;
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: var(--border-radius-sm);
+    font-size: 1.1rem;
+    color: var(--light-text-color);
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    /* Animación de entrada escalonada para cada tip */
+    opacity: 0;
+    transform: translateX(-10px);
+    animation: slideInFromLeft 0.4s ease-out forwards;
+}
+
+.additional-tips ul li:nth-child(1) { animation-delay: 0.1s; }
+.additional-tips ul li:nth-child(2) { animation-delay: 0.2s; }
+.additional-tips ul li:nth-child(3) { animation-delay: 0.3s; }
+.additional-tips ul li:nth-child(4) { animation-delay: 0.4s; }
+.additional-tips ul li:nth-child(5) { animation-delay: 0.5s; }
+
+
+/* --- Keyframes (Las animaciones en sí) --- */
+
+/* Animación de entrada con opacidad y escala */
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Animación de salida con opacidad y traslación */
+@keyframes fadeOutTranslate {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+}
+
+/* Animación de entrada con opacidad y traslación desde abajo */
+@keyframes fadeInTranslate {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Animación simple de desvanecimiento */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Animación de aparición con slide y fade */
+@keyframes fadeInSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Animación de pulsación para el texto de carga */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.02);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Animación de deslizamiento desde arriba (para contenedores) */
+@keyframes slideInFromTop {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Animación de deslizamiento desde la izquierda (para ítems de lista) */
+@keyframes slideInFromLeft {
+    from {
+        transform: translateX(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* --- Media Queries (Responsividad) --- */
 @media (max-width: 900px) {
+    body {
+        padding: 1rem;
+    }
+    .welcome-screen {
+        padding: 2rem;
+        margin: 2rem auto;
+    }
+    .welcome-screen h1 {
+        font-size: 2rem;
+    }
+    .welcome-screen p {
+        font-size: 1rem;
+    }
+    .welcome-screen button {
+        font-size: 1.2rem;
+        padding: 1rem 2rem;
+    }
     .card {
         max-width: 98vw;
         min-height: 500px;
         padding: 1.5rem 0.5rem;
     }
-
     .card .preview-frame {
         height: 220px;
     }
-
     .card h3 {
         font-size: 1.3rem;
     }
-
     .card p {
         font-size: 1rem;
+    }
+    .additional-tips {
+        padding: 1rem;
+    }
+    .additional-tips h3 {
+        font-size: 1.5rem;
+    }
+    .additional-tips ul li {
+        font-size: 0.95rem;
     }
 }

@@ -5,45 +5,69 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Asistente de Peinados IA</title>
+    <meta name="description" content="Asistente de peinados impulsado por IA para encontrar el peinado ideal según la forma de tu rostro.">
     <link rel="stylesheet" href="styles.css">
-</head>
+    </head>
 
 <body>
-    <h1>Asistente de Peinados IA</h1>
-
-    <div class="upload-section">
-        <div class="input-options">
-            <button class="input-option active" id="fileOption">Subir archivo</button>
-            <button class="input-option" id="cameraOption">Usar cámara</button>
+    <div class="welcome-screen" id="welcomeScreen">
+        <h1>¡Bienvenido a tu Asistente de Peinados IA!</h1>
+        <p>Antes de empezar, nos gustaría conocerte un poco mejor. ¡Vamos a crear recomendaciones personalizadas para ti!</p>
+        <div class="input-group">
+            <label for="userName">Nombre:</label>
+            <input type="text" id="userName" placeholder="Tu nombre" required>
         </div>
-
-        <div class="file-input-container active" id="fileInputContainer">
-            <input type="file" id="fileInput" accept="image/*">
+        <div class="input-group">
+            <label for="userLastName">Apellido:</label>
+            <input type="text" id="userLastName" placeholder="Tu apellido" required>
         </div>
+        <div class="input-group">
+            <label for="userAge">Edad:</label>
+            <input type="number" id="userAge" placeholder="Tu edad" min="1" max="120" required>
+        </div>
+        <button id="startButton">¡Comenzar!</button>
+    </div>
 
-        <div class="camera-container" id="cameraContainer">
-            <video id="video" autoplay playsinline></video>
-            <img id="capturedImage" alt="Foto capturada">
-            <div class="camera-buttons">
-                <button id="captureButton" class="camera-button">Tomar foto</button>
-                <button id="confirmButton" class="camera-button">Confirmar</button>
-                <button id="retakeButton" class="camera-button">Volver a tomar</button>
+    <div class="main-content hidden" id="mainContent">
+        <h1 id="mainTitle"></h1> <div class="upload-section">
+            <div class="input-options">
+                <button class="input-option active" id="fileOption">Subir archivo</button>
+                <button class="input-option" id="cameraOption">Usar cámara</button>
             </div>
+
+            <div class="file-input-container active" id="fileInputContainer">
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+
+            <div class="camera-container" id="cameraContainer">
+                <video id="video" autoplay playsinline></video>
+                <img id="capturedImage" alt="Foto capturada">
+                <div class="camera-buttons">
+                    <button id="captureButton" class="camera-button">Tomar foto</button>
+                    <button id="confirmButton" class="camera-button">Confirmar</button>
+                    <button id="retakeButton" class="camera-button">Volver a tomar</button>
+                </div>
+            </div>
+
+            <div class="preview" id="preview"></div>
         </div>
 
-        <div class="preview" id="preview"></div>
-    </div>
+        <div class="loading" id="loading">
+            <p>Analizando tu rostro y buscando los mejores peinados para ti... 🔍</p>
+        </div>
 
-    <div class="loading" id="loading">
-        <p>Analizando tu rostro y buscando los mejores peinados para ti... 🔍</p>
-    </div>
+        <div class="face-analysis" id="faceAnalysis">
+            <h3>Análisis de tu rostro:</h3>
+            <p id="faceType"></p>
+        </div>
 
-    <div class="face-analysis" id="faceAnalysis">
-        <h3>Análisis de tu rostro:</h3>
-        <p id="faceType"></p>
-    </div>
+        <div class="cards" id="cards"></div>
 
-    <div class="cards" id="cards"></div>
+        <div class="additional-tips" id="additionalTips" style="display:none;">
+            <h3>Consejos Adicionales:</h3>
+            <ul id="tipsList"></ul>
+        </div>
+    </div>
 
     <div class="loading-overlay" id="loadingOverlay">
         <div class="spinner"></div>
