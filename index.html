@@ -7,7 +7,7 @@
     <title>Asistente de Peinados IA</title>
     <meta name="description" content="Asistente de peinados impulsado por IA para encontrar el peinado ideal según la forma de tu rostro.">
     <link rel="stylesheet" href="styles.css">
-    </head>
+</head>
 
 <body>
     <div class="welcome-screen" id="welcomeScreen">
@@ -29,7 +29,9 @@
     </div>
 
     <div class="main-content hidden" id="mainContent">
-        <h1 id="mainTitle"></h1> <div class="upload-section">
+        <h1 id="mainTitle"></h1> 
+        
+        <div class="upload-section">
             <div class="input-options">
                 <button class="input-option active" id="fileOption">Subir archivo</button>
                 <button class="input-option" id="cameraOption">Usar cámara</button>
@@ -56,9 +58,15 @@
             <p>Analizando tu rostro y buscando los mejores peinados para ti... 🔍</p>
         </div>
 
-        <div class="face-analysis" id="faceAnalysis">
-            <h3>Análisis de tu rostro:</h3>
-            <p id="faceType"></p>
+        <div class="face-analysis-container" id="faceAnalysisContainer">
+            <div class="analysis-image-wrapper">
+                <img id="analysisImage" src="#" alt="Imagen de análisis">
+            </div>
+
+            <div class="face-analysis" id="faceAnalysis">
+                <h3>Tu Análisis Facial:</h3>
+                <p id="faceType"></p>
+            </div>
         </div>
 
         <div class="cards" id="cards"></div>

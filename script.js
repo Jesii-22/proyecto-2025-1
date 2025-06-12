@@ -23,13 +23,17 @@ const capturedImage = document.getElementById('capturedImage');
 const fileInput = document.getElementById('fileInput');
 const preview = document.getElementById('preview');
 const loading = document.getElementById('loading');
-const faceAnalysis = document.getElementById('faceAnalysis');
+const faceAnalysis = document.getElementById('faceAnalysis'); // La caja de texto del análisis
 const cards = document.getElementById('cards');
 const pantallaCargando = document.getElementById('pantallaCargando');
 const loadingOverlay = document.getElementById('loadingOverlay');
 const faceType = document.getElementById('faceType');
 const additionalTips = document.getElementById('additionalTips'); // Nuevo elemento para los consejos
 const tipsList = document.getElementById('tipsList'); // Nuevo elemento para la lista de consejos
+
+// Nuevos elementos para el layout del análisis
+const faceAnalysisContainer = document.getElementById('faceAnalysisContainer');
+const analysisImage = document.getElementById('analysisImage');
 
 let stream = null;
 let capturedPhoto = null;
@@ -88,6 +92,10 @@ function resetCameraUI() {
     capturedImage.style.display = 'none';
     video.style.display = 'block';
     capturedPhoto = null;
+    // Ocultar el contenedor de análisis y las tarjetas al resetear la cámara
+    faceAnalysisContainer.classList.remove('active'); 
+    cards.innerHTML = '';
+    additionalTips.style.display = 'none';
 }
 
 // Función para iniciar la cámara (existente)
@@ -226,8 +234,9 @@ async function processCapturedImage(file) {
 
         capturedPhoto = optimizedFile;
 
-        pantallaCargando.classList.add('oculta');
-        loadingOverlay.classList.remove('active');
+        // No mostrar la pantalla de carga aquí, se hará en sendToGemini
+        // pantallaCargando.classList.add('oculta');
+        // loadingOverlay.classList.remove('active');
 
         return optimizedFile;
     } catch (error) {
@@ -251,6 +260,10 @@ confirmButton.addEventListener('click', async () => {
             stream = null;
         }
 
+        // Antes de enviar a Gemini, muestra la imagen en el nuevo contenedor de análisis
+        const imageUrl = URL.createObjectURL(capturedPhoto);
+        analysisImage.src = imageUrl; // Asigna la imagen al nuevo elemento
+
         pantallaCargando.classList.remove('oculta');
         loadingOverlay.classList.add('active');
 
@@ -272,11 +285,16 @@ retakeButton.addEventListener('click', () => {
 fileInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (file) {
+        // Ocultar cualquier análisis o tarjeta previa al subir una nueva imagen
+        faceAnalysisContainer.classList.remove('active');
+        cards.innerHTML = '';
+        additionalTips.style.display = 'none';
+
         await processImage(file);
     }
 });
 
-// Función para procesar la imagen (para file input - existente, con la nueva lógica de `optimizeImage`)
+// Función para procesar la imagen (para file input)
 async function processImage(file) {
     try {
         if (file.size > 5 * 1024 * 1024) { // Límite inicial
@@ -293,11 +311,15 @@ async function processImage(file) {
             throw new Error(`La imagen optimizada sigue siendo demasiado grande (${(optimizedFile.size / 1024).toFixed(2)} KB). Intenta con una imagen diferente.`);
         }
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            preview.innerHTML = `<img src="${e.target.result}" alt="Vista previa">`;
-        };
-        reader.readAsDataURL(optimizedFile);
+        // Antes de enviar a Gemini, muestra la imagen en el nuevo contenedor de análisis
+        const imageUrl = URL.createObjectURL(optimizedFile);
+        analysisImage.src = imageUrl; // Asigna la imagen al nuevo elemento
+
+        // Quitar la vista previa antigua si no la usas más
+        preview.innerHTML = ''; // Limpia el preview antiguo si lo deseas
+        
+        pantallaCargando.classList.remove('oculta');
+        loadingOverlay.classList.add('active');
 
         await sendToGemini(optimizedFile);
     } catch (error) {
@@ -327,7 +349,7 @@ async function sendToGemini(file) {
             const requestBody = {
                 contents: [{
                     parts: [{
-                        text: promptText // Usamos el prompt modificado
+                        text: promptText
                     }, {
                         inline_data: {
                             mime_type: "image/png",
@@ -351,7 +373,7 @@ async function sendToGemini(file) {
             }
 
             const data = await response.json();
-            console.log('Respuesta de Gemini:', data);
+            // console.log('Respuesta de Gemini:', data);
 
             if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
                 throw new Error('La API no devolvió una respuesta válida');
@@ -366,7 +388,7 @@ async function sendToGemini(file) {
             additionalTips.style.display = 'none'; // Ocultar por si no hay tips
             tipsList.innerHTML = ''; // Limpiar tips anteriores
 
-            // Procesar la respuesta (ahora incluyendo consejos adicionales)
+            // Procesar la respuesta
             const sections = text.split('\n\n');
             let currentSection = '';
 
@@ -375,7 +397,7 @@ async function sendToGemini(file) {
                     currentSection = 'análisis';
                     const analysisContent = section.replace('ANÁLISIS DEL ROSTRO:', '').trim();
                     faceType.textContent = analysisContent;
-                    faceAnalysis.style.display = 'block';
+                    faceAnalysisContainer.classList.add('active'); // Mostrar el contenedor principal del análisis
                 } else if (section.startsWith('RECOMENDACIONES DE PEINADOS:')) {
                     currentSection = 'recomendaciones';
                 } else if (section.startsWith('CONSEJOS ADICIONALES:')) {
@@ -444,4 +466,8 @@ function ocultarPantallaCargando() {
 document.addEventListener('DOMContentLoaded', () => {
     mainContent.classList.add('hidden');
     welcomeScreen.classList.remove('hidden'); // Asegurarse de que la pantalla de bienvenida esté visible
+    // Asegurarse de que el contenedor de análisis y las tarjetas estén ocultas al inicio
+    faceAnalysisContainer.classList.remove('active'); 
+    cards.innerHTML = '';
+    additionalTips.style.display = 'none';
 });
