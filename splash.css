@@ -1,0 +1,80 @@
+/* --- Estilos para la Pantalla de Carga Inicial (Splash Screen) --- */
+
+.splash-screen {
+    position: fixed; /* Cubre toda la ventana del navegador */
+    top: 0;
+    left: 0;
+    width: 100vw; /* Ancho del viewport */
+    height: 100vh; /* Alto del viewport */
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); /* Degradado con tus colores */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    z-index: 1000; /* Asegura que esté por encima de todo */
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 1s ease-out, visibility 1s ease-out; /* Transición para ocultarse */
+}
+
+
+body{
+  font-family: "Dancing Script", cursive;
+  font-optical-sizing: auto;
+  font-weight: weight;
+  font-style: normal;
+}
+
+.splash-screen.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none; /* Deshabilita interacciones una vez oculto */
+}
+
+.splash-content {
+    text-align: center;
+    color: white; /* Color de texto blanco para contrastar con el fondo */
+    padding: 2rem;
+    animation: fadeInScale 1.5s ease-out forwards; /* Animación de entrada para el contenido */
+}
+
+.splash-logo {
+    max-width: 250px; /* Tamaño del logo */
+    height: auto;
+    margin-bottom: 1.5rem;
+    /* Si tu logo es un GIF animado, puedes mantener la animación 'pulse'.
+       Si es un PNG estático y no quieres que "palpite", elimina la línea de abajo. */
+    animation: pulse 2s infinite ease-in-out; /* Animación de pulsación para el logo */
+}
+
+.splash-slogan {
+    font-size: 2.5rem; /* Tamaño del eslogan */
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3); /* Sombra para el texto */
+    margin-top: 1rem;
+}
+
+/* --- Animaciones para la pantalla de carga (se pueden definir aquí o en styles.css) --- */
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}

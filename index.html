@@ -4,13 +4,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Asistente de Peinados IA</title>
-    <meta name="description" content="Asistente de peinados impulsado por IA para encontrar el peinado ideal según la forma de tu rostro.">
+    <title>GlowAI - Tu estilo único</title>
+    <meta name="description" content="Descubrí el peinado que más te favorece con GlowAI. Analizamos tu rostro con inteligencia artificial para que brilles con un estilo único y personalizado.">
+    
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="splash.css"> 
+    <!-- fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&display=swap" rel="stylesheet">
+
 </head>
 
 <body>
-    <div class="welcome-screen" id="welcomeScreen">
+    <div class="splash-screen" id="splashScreen">
+        <div class="splash-content">
+            <img src="glouwai.png" alt="GlowAI Logo" class="splash-logo">
+            <p class="splash-slogan">Tu brillo empieza por el look</p>
+        </div>
+    </div>
+    <div class="welcome-screen hidden" id="welcomeScreen">
         <h1>¡Bienvenido a tu Asistente de Peinados IA!</h1>
         <p>Antes de empezar, nos gustaría conocerte un poco mejor. ¡Vamos a crear recomendaciones personalizadas para ti!</p>
         <div class="input-group">
@@ -62,7 +75,6 @@
             <div class="analysis-image-wrapper">
                 <img id="analysisImage" src="#" alt="Imagen de análisis">
             </div>
-
             <div class="face-analysis" id="faceAnalysis">
                 <h3>Tu Análisis Facial:</h3>
                 <p id="faceType"></p>
@@ -87,8 +99,7 @@
         <div class="mensaje-cargando">Cargando...</div>
         <div class="submensaje">Estamos analizando tu imagen y generando recomendaciones personalizadas.</div>
     </div>
-
-    <script src="script.js"></script>
-</body>
+    
+    <script src="splash.js"></script> <script src="script.js"></script> </body>
 
 </html>

@@ -24,7 +24,10 @@ html {
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+   font-family: "Dancing Script", cursive;
+  font-optical-sizing: auto;
+  font-weight: weight;
+  font-style: normal;
     background: #c5ffbd; /* Fondo de la página, un verde muy claro */
     padding: 0 2rem 2rem 2rem; /* padding-top en 0, manteniendo los demás */
     max-width: 1200px;
@@ -33,6 +36,7 @@ body {
     flex-direction: column;
     align-items: center;
     min-height: 100vh;
+   
 }
 
 h1 {
@@ -195,13 +199,17 @@ h1 {
 }
 
 .camera-container {
-    margin: 1rem 0;
-    display: none;
+   margin: 1rem auto; /* Centra el contenedor completo */
+    display: flex; /* Habilita Flexbox */
+    flex-direction: column; /* Apila los elementos verticalmente */
+    align-items: center; /* Centra horizontalmente los ítems dentro del contenedor */
+   
+    display: none; /* Mantén esto para que se oculte por defecto */
     animation: slideInFromTop 0.4s ease-out;
 }
 
 .camera-container.active {
-    display: block;
+      display: flex; /* Cambia a flex para mostrar y centrar */
 }
 
 #video {
@@ -211,6 +219,8 @@ h1 {
     margin-bottom: 1rem;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     animation: fadeIn 0.5s ease-out;
+    align-content: center;
+    
 }
 
 .camera-buttons {
@@ -218,7 +228,10 @@ h1 {
     gap: 1rem;
     justify-content: center;
     margin-bottom: 1rem;
+    width: 100%; /* Asegura que ocupe el ancho para que justify-content funcione bien */
+    max-width: 400px; /* O el mismo max-width que el video/imagen para que estén alineados */
 }
+
 
 .camera-button {
     padding: 0.8rem 1.5rem;
@@ -266,8 +279,10 @@ h1 {
 }
 
 #capturedImage {
-    display: none;
-    max-width: 400px;
+   display: none;
+    max-width: 400px; /* Mantén el max-width para controlar el tamaño */
+    width: 100%; /* Asegura que ocupe el 100% del espacio disponible hasta el max-width */
+    height: auto; /* Mantiene la proporción */
     border-radius: 8px;
     margin-bottom: 1rem;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
@@ -322,12 +337,15 @@ input[type="file"]:hover {
     gap: 2rem; /* Espacio entre la imagen y el análisis */
     align-items: center; /* Centra los ítems cuando están en columna */
     justify-content: center;
-    margin: 2rem 0;
-    width: 100%;
+    margin: 2rem auto;
+    text-align: center; /* Centra el texto dentro de los elementos <p> y <h3> */
+    width: 90%;
+    /* padding: 1.5rem; */
     max-width: 900px; /* Limita el ancho del contenedor */
     animation: fadeInSlideUp 0.6s ease-out forwards; /* Misma animación de entrada */
     display: none; /* Inicialmente oculto */
 }
+
 
 .face-analysis-container.active {
     display: flex; /* Mostrar cuando esté activo */
