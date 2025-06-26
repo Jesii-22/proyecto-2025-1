@@ -1,11 +1,11 @@
 :root {
-    --primary-color: #9B24E1; /* Púrpura vibrante */
-    --secondary-color: #E01BA0; /* Rosa magenta */
+    --primary-color: #f49ad6; /* Púrpura vibrante */
+    --secondary-color: #fd69ce; /* Rosa magenta */
     --accent-color: #17E376; /* Verde lima brillante */
     --light-background: #33E01B; /* Verde claro vibrante - Usado como base del gradiente en algunos loaders */
     --card-background: white; /* Fondo de tarjetas y elementos principales */
     --text-color: #8B3F72; /* Color de texto principal (un púrpura más oscuro) */
-    --light-text-color: #533C61; /* Color de texto secundario/ligero (un púrpura grisáceo) */
+    --light-text-color: #9b6485; /* Color de texto secundario/ligero (un púrpura grisáceo) */
     --border-radius-sm: 6px;
     --border-radius-md: 12px;
     --border-radius-lg: 18px;
@@ -22,6 +22,45 @@
 html {
     scroll-behavior: smooth;
 }
+
+/* Estilos para el logo de la cabecera */
+.header-logo-container {
+    position: fixed; /* Hace que el logo sea estático con respecto a la ventana del navegador */
+    top: 20px;       /* Ajusta según necesites la posición vertical */
+    left: 20px;      /* Ajustado para la esquina superior izquierda */
+    z-index: 1000;   /* Asegura que el logo esté siempre encima de otros contenidos */
+}
+
+.header-logo {
+    width: 100px; /* Ajusta el tamaño de tu logo */
+    /* Para un círculo perfecto y para que el fondo se vea bien, es ideal que width y height sean iguales */
+    height: 100px; /* Mantenemos 80px para una forma circular consistente */
+    object-fit: cover; /* Asegura que la imagen cubra el círculo sin distorsionarse */
+    border-radius: 50%; /* ¡Forma circular de nuevo! */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Sutil sombra para dar profundidad */
+    animation: pulse 2s infinite ease-in-out; /* Aplica la animación */
+    
+    /* Fondo rosado/fucsia con opacidad */
+    background-color: rgba(82, 120, 72, 0.89); /* Un fucsia con 70% de opacidad */
+    /* O puedes probar con un rosa más suave: rgba(255, 192, 203, 0.7) */
+    padding: 5px; /* Un pequeño padding para que el fondo se vea alrededor del logo */
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05); /* Ligeramente más grande */
+        opacity: 0.9; /* Ligeramente más transparente */
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
 
 body {
    font-family: "Dancing Script", cursive;
@@ -69,10 +108,20 @@ h1 {
     margin-bottom: 1rem;
 }
 
+
+.splash-logo2 {
+    max-width: 180px; /* Tamaño del logo */
+    height: auto;
+    margin-bottom: 1.5rem;
+    /* Si tu logo es un GIF animado, puedes mantener la animación 'pulse'.
+       Si es un PNG estático y no quieres que "palpite", elimina la línea de abajo. */
+    animation: pulse 2s infinite ease-in-out; /* Animación de pulsación para el logo */
+}
+
 .welcome-screen p {
     font-size: 1.3rem;
     color: var(--light-text-color);
-    margin-bottom: 2rem;
+    /* margin-bottom: 2rem; */
 }
 
 .welcome-screen .input-group {

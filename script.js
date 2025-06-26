@@ -57,7 +57,7 @@ startButton.addEventListener('click', () => {
 
         welcomeScreen.classList.add('hidden'); // Oculta la pantalla de bienvenida
         mainContent.classList.remove('hidden'); // Muestra el contenido principal
-        mainTitle.textContent = `¡Hola ${userName} ${userLastName}! Sube o sácate una foto y te daremos recomendaciones de peinados según la forma de tu rostro.`;
+        mainTitle.textContent = `¡Hola ${userName} ${userLastName}! Sube o sácate una foto y te daremos recomendaciones según la forma de tu rostro.`;
 
         // Asegura que la opción de archivo esté activa al iniciar
         switchInput('file');
